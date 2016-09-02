@@ -1,11 +1,27 @@
 from __future__ import print_function
 __author__ = """Alex "O." Holcombe, Charles Ludowici, """ ## double-quotes will be silently removed, single quotes will be left, eg, O'Connor
-
+import time, sys, platform, os
 try:
-  import helpersAOH
-except:
-  print 'Could not load helpersAOH'
-  quit
+    from helpersAOH import accelerateComputer, openMyStimWindow
+except Exception as e: 
+   print(e)
+   print('Could not load helpersAOH. You need the file helpersAOH.py in the same directory as this file')
+   print('Current directory is ',os.getcwd())
+   quit
+try:
+    import eyelinkEyetrackerForPsychopySUPA3   #Psychopy v1.83.01 mistakenly included an old version of pylink which prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing
+except Exception as e: 
+    print(e)
+    print('Could not load eyelinkEyetrackerForPsychopySUPA3. You need the file eyelinkEyetrackerForPsychopySUPA3.py in the same directory as this file')
+    print('Current directory is ',os.getcwd())
+    quit
+try:
+    from eyelinkEyetrackerForPsychopySUPA3 import Tracker_EyeLink  #Psychopy v1.83.01 mistakenly included an old version of pylink which prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing
+except Exception as e: 
+    print(e)    
+    print('Could not load from EyelinkEyetrackerForPsychopySUPA3. You need the file EyelinkEyetrackerForPsychopySUPA3.py in the same directory as this file')
+    print('Current directory is ',os.getcwd())
+    quit
   
 import psychopy.info
 from psychopy import visual, sound, monitors, logging
@@ -181,6 +197,24 @@ def oneTrial():
 	#SOA, duration
 	pass
 
+expStop = False
+
+trialNum=0; numTrialsCorrect=0; expStop=False; framesSaved=0;
+print('Starting experiment of',trials.nTotal,'trials. Current trial is trial ',trialNum)
+NextRemindCountText.setText( str(trialNum) + ' of ' + str(trials.nTotal)     )
+NextRemindCountText.draw()
+myWin.flip()
+#end of header
+trialClock = core.Clock()
+stimClock = core.Clock()
+thisTrial = trials.next()
+ts = list();
+
+if eyetracking:
+    if getEyeTrackingFileFromEyetrackingMachineAtEndOfExperiment:
+        eyeMoveFile=('EyeTrack_'+subject+'_'+timeAndDateStr+'.EDF')
+    tracker=Tracker_EyeLink(myWin,trialClock,subject,1, 'HV5',(255,255,255),(0,0,0),False,(widthPix,heightPix))
+
 while trialNum < trials.nTotal and expStop==False:
-	pass
+	print("Doing trialNum",trialNum)
 	
