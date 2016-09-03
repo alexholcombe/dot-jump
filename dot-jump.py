@@ -1,36 +1,35 @@
 from __future__ import print_function
 __author__ = """Alex "O." Holcombe, Charles Ludowici, """ ## double-quotes will be silently removed, single quotes will be left, eg, O'Connor
 import time, sys, platform, os
+from math import atan, pi, cos, sin, sqrt, ceil
+import numpy as np
+import psychopy.info
+from psychopy import visual, sound, monitors, logging, gui, event
 try:
     from helpersAOH import accelerateComputer, openMyStimWindow
 except Exception as e: 
-   print(e)
-   print('Could not load helpersAOH. You need the file helpersAOH.py in the same directory as this file')
+   print(e); print('Problem loading helpersAOH. Check that the file helpersAOH.py in the same directory as this file')
    print('Current directory is ',os.getcwd())
-   quit
+   
+eyeTracking = False
 try:
-    import eyelinkEyetrackerForPsychopySUPA3   #Psychopy v1.83.01 mistakenly included an old version of pylink which prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing
+    import eyelinkEyetrackerForPsychopySUPA3   
 except Exception as e: 
     print(e)
-    print('Could not load eyelinkEyetrackerForPsychopySUPA3. You need the file eyelinkEyetrackerForPsychopySUPA3.py in the same directory as this file')
-    print('Current directory is ',os.getcwd())
-    quit
-try:
-    from eyelinkEyetrackerForPsychopySUPA3 import Tracker_EyeLink  #Psychopy v1.83.01 mistakenly included an old version of pylink which prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing
-except Exception as e: 
-    print(e)    
-    print('Could not load from EyelinkEyetrackerForPsychopySUPA3. You need the file EyelinkEyetrackerForPsychopySUPA3.py in the same directory as this file')
-    print('Current directory is ',os.getcwd())
-    quit
-  
-import psychopy.info
-from psychopy import visual, sound, monitors, logging
+    print('Problem loading eyelinkEyetrackerForPsychopySUPA3. Check that the file eyelinkEyetrackerForPsychopySUPA3.py in the same directory as this file')
+    #Psychopy v1.83.01 mistakenly included an old version of pylink which prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing
+    eyeTracking = False
 
 demo = False; exportImages = False
+autopilot = False
 
 ###############################
 ### Setup the screen parameters    ##############################################################################################
 ##
+allowGUI = False
+units='deg' #'cm'
+fullscrn=False
+waitBlank=False
 if True: #just so I can indent all the below
         refreshRate= 85 *1.0;  #160 #set to the framerate of the monitor
         fullscrn=0; #show in small window (0) or full screen (1) 
@@ -63,13 +62,13 @@ if True: #just so I can indent all the below
         
         mon = monitors.Monitor(monitorname,width=monitorwidth, distance=viewdist)#fetch the most recent calib for this monitor
         mon.setSizePix( (widthPix,heightPix) )
-        myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscr,scrn,waitBlank)
+        myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscrn,scrn,waitBlank)
         myMouse = event.Mouse(visible = 'true',win=myWin)
         myWin.setRecordFrameIntervals(False)
         
         mon = monitors.Monitor(monitorname,width=monitorwidth, distance=viewdist)#fetch the most recent calib for this monitor
         mon.setSizePix( (widthPix,heightPix) )
-        myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscr,scrn,waitBlank)
+        myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscrn,scrn,waitBlank)
         myMouse = event.Mouse(visible = 'true',win=myWin)
         myWin.setRecordFrameIntervals(False)
         
@@ -173,7 +172,7 @@ logging.info(msg); print(msg)
 if msgWrongResolution != '':
     logging.error(msgWrongResolution)
 
-myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscr,scrn,waitBlank)
+myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscrn,scrn,waitBlank)
 msg='Window opened'; print(msg); logging.info(msg)
 myMouse = event.Mouse(visible = 'true',win=myWin)
 msg='Mouse enabled'; print(msg); logging.info(msg)
