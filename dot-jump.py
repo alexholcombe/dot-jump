@@ -3,7 +3,7 @@ __author__ = """Alex "O." Holcombe, Charles Ludowici, """ ## double-quotes will 
 import time, sys, platform, os
 from math import atan, pi, cos, sin, sqrt, ceil
 import numpy as np
-import psychopy.info
+import psychopy, psychopy.info
 from psychopy import visual, sound, monitors, logging, gui, event
 try:
     from helpersAOH import accelerateComputer, openMyStimWindow
@@ -124,7 +124,8 @@ if askUserAndConfirmExpParams:
         msgWrongResolution = 'Instead of desired resolution of '+ str(widthPix)+'x'+str(heightPix)+ ' pixels, screen apparently '+ str(myWinRes[0])+ 'x'+ str(myWinRes[1])
         myDlg.addText(msgWrongResolution, color='Red')
         print(msgWrongResolution); logging.info(msgWrongResolution)
-    myDlg.addText('Note: to abort press ESC at a trials response screen', color=[-1.,1.,-1.]) # color='DimGrey') color names stopped working along the way, for unknown reason
+    myDlg.addText('Note: to abort press ESC at response time', color='DimGrey') #works in PsychoPy1.84
+    #myDlg.addText('Note: to abort press ESC at a trials response screen', color=[-1.,1.,-1.]) #color names not working for some pre-1.84 versions
     myDlg.show()
     if myDlg.OK: #unpack information from dialogue box
        thisInfo = myDlg.data #this will be a list of data returned from each field added in order
