@@ -20,9 +20,10 @@ except Exception as e:
     #Psychopy v1.83.01 mistakenly included an old version of pylink which prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing
     eyeTracking = False
 
+expname= "dot-jump"
 demo = False; exportImages = False
 autopilot = False
-
+subject='test'
 ###############################
 ### Setup the screen parameters    ##############################################################################################
 ##
@@ -80,9 +81,6 @@ if True: #just so I can indent all the below
             refreshRateWrong = False
         else: #checkRefreshEtc
             runInfo = psychopy.info.RunTimeInfo(
-                    # if you specify author and version here, it overrides the automatic detection of __author__ and __version__ in your script
-                    #author='<your name goes here, plus whatever you like, e.g., your lab or contact info>',
-                    #version="<your experiment version info>",
                     win=myWin,    ## a psychopy.visual.Window() instance; None = default temp window used; False = no win, no win.flips()
                     refreshTest='grating', ## None, True, or 'grating' (eye-candy to avoid a blank screen)
                     verbose=True, ## True means report on everything 
@@ -111,7 +109,7 @@ askUserAndConfirmExpParams = True
 ## askUserAndConfirmExpParams
 if askUserAndConfirmExpParams:
     dlgLabelsOrdered = list() #new dialog box
-    myDlg = gui.Dlg(title="dot-jump experiment", pos=(200,400))
+    myDlg = gui.Dlg(title=expname, pos=(200,400))
     if not autopilot:
         myDlg.addField('Subject code :', subject)
         dlgLabelsOrdered.append('subject')
@@ -151,7 +149,7 @@ else:
     msg= 'dataRaw directory does not exist, so saving data in present working directory'
     print(msg); logging.info(msg)
     dataDir='.'
-expname = ''
+timeAndDateStr = time.strftime("%d%b%Y_%H-%M", time.localtime()) 
 fileNameWithPath = dataDir+'/'+subject+ '_' + expname+timeAndDateStr
 if not demo and not exportImages:
     saveCodeCmd = 'cp \'' + sys.argv[0] + '\' '+ fileNameWithPath + '.py'
@@ -188,6 +186,13 @@ logging.info(runInfo)
 logging.info('gammaGrid='+str(mon.getGammaGrid()))
 logging.info('linearizeMethod='+str(mon.getLinearizeMethod()))
 
+stimList = []
+#Set up the factorial design (list of all conditions)
+for targetOffset in [-1.00, 1.00]: 
+                for objToCueQuadrant in range(4):
+                    stimList.append( {'numCuesEachRing':numCuesEachRing,'numObjsEachRing':numObjsEachRing,'targetOffset':targetOffset,
+                                                'cueLeadTime':cueLeadTime,'speed':speed,'objToCueQuadrant':objToCueQuadrant,'direction':direction} )
+                                                
 def oneFrameOfStim():
 	pass
 	
@@ -195,6 +200,7 @@ def oneTrial():
 	#number of locations
 	#SOA, duration
 	pass
+
 
 expStop = False
 
