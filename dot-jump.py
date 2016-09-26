@@ -1,9 +1,10 @@
 from __future__ import print_function
 __author__ = """Alex "O." Holcombe, Charles Ludowici, """ ## double-quotes will be silently removed, single quotes will be left, eg, O'Connor
 import time, sys, platform, os
-from math import atan, pi, cos, sin, sqrt, ceil
+from math import atan, pi, cos, sin, sqrt, ceil, radians, degrees
 import numpy as np
 import psychopy, psychopy.info
+import copy
 from psychopy import visual, sound, monitors, logging, gui, event
 try:
     from helpersAOH import accelerateComputer, openMyStimWindow
@@ -188,12 +189,13 @@ logging.info('gammaGrid='+str(mon.getGammaGrid()))
 logging.info('linearizeMethod='+str(mon.getLinearizeMethod()))
 
 numResponsesPerTrial = 1 #default. Used to create headers for dataFile
+numTrialsPerCondition = 10
 stimList = []
 #Set up the factorial design (list of all conditions)
-for targetOffset in [-1.00, 1.00]:
-                for objToCueQuadrant in range(4):
-                    stimList.append( {'numCuesEachRing':numCuesEachRing,'numObjsEachRing':numObjsEachRing,'targetOffset':targetOffset,
-                                                'cueLeadTime':cueLeadTime,'speed':speed,'objToCueQuadrant':objToCueQuadrant,'direction':direction} )
+for cuePos in cuePositions:
+    stimList.append({'cuePos':cuePos})
+
+trials = psychopy.data.TrialHandler(stimList, nReps = numTrialsPerCondition)
 ####Create output file###
 #########################################################################
 dataFile = open(fileNameWithPath + '.txt', 'w')
@@ -266,16 +268,58 @@ print('',file=dataFile)
 
 ####Functions. Save time by automating processes like stimulus creation and ordering
 ############################################################################
+def stimuliOnCircle(nDots, radius, center, stimulusObject, sameEachTime = True):
+    if len(center) > 2 or len(center) < 2:
+        print 'Center coords must be list of length 2'
+        return None
+    if not sameEachTime & len(stimulusObject) != nDots:
+        print 'You want different objects in each position, but the number of positions does not equal the number of items'
+    spacing = 360./nDots
+    stimuli = []
+    for dot in range(nDots):
+        angle = dot*spacing
+        if angle == 0:
+            xpos = radius
+            ypos = 0
+        elif angle == 90:
+            xpos = 0
+            ypos = radius
+        elif angle == 180:
+            xpos = -radius
+            ypos = 0
+        elif angle == 270:
+            xpos = 0
+            ypos = -radius
+        elif angle%90!=0:
+            xpos = radius*cos(radians(angle))
+            ypos = radius*sin(radians(angle))
+        if sameEachTime:
+            stim = copy.copy(stimulusObject)
+        elif !sameEachTime:
+            stim = stimulusObject[dot]
+        stim.pos(xpos,ypos)
+        stimuli.append(stim)
+    return stimuli
 
-def oneFrameOfStim():
-	#n: which frame?
-    #objects: Stimuli to display or move based on n
+
+def oneFrameOfStim(n, trialDurFrames, itemDurFrames, ISIFrames, cueDurFrames, cuePos, trialObjects):
+    cueFrame = cuePos * SOAFrames
+    SOAFrames = itemDurFrames + ISIFrames
+    objectIdx = n//SOAFrames #floored quotient
+    obj = trialObjects[objectIdx]
+    drawObject = n%SOAFrames < itemDurFrames
+    if drawObject:
+        if n >= cueFrame & n < (cueFrame + cueDurFrames):
+            if n%2 != 0: #This should make it flash, but it might be too fast
+                obj.draw()
+        else:
+            obj.draw()
+    return True
+    #objects: Stimuli to display or
     #cue: cue stimulus or stimuli
     #timing parameters: Could be item duration, soa and isi. i.e. if SOA+Duration % n == 0: stimulus.setColor(stimulusColor)
     #bgColor and stimulusColor: if displaying and hiding stimuli, i.e. for RSVP
     #movementVector: direction and distance of movement if moving stimuli
-
-    pass
 
 def oneTrial():
 	#number of locations
