@@ -5,7 +5,7 @@ from math import atan, pi, cos, sin, sqrt, ceil, radians, degrees
 import numpy as np
 import psychopy, psychopy.info
 import copy
-from psychopy import visual, sound, monitors, logging, gui, event
+from psychopy import visual, sound, monitors, logging, gui, event, core, data
 try:
     from helpersAOH import accelerateComputer, openMyStimWindow
 except Exception as e:
@@ -35,27 +35,27 @@ waitBlank=False
 if True: #just so I can indent all the below
         refreshRate= 85 *1.0;  #160 #set to the framerate of the monitor
         fullscrn=0; #show in small window (0) or full screen (1)
-        scrn=0 #which screen to display the stimuli. 0 is home screen, 1 is second screen
+        scrn=True #which screen to display the stimuli. 0 is home screen, 1 is second screen
         # create a dialog from dictionary
-        infoFirst = { 'Autopilot':autopilot, 'Check refresh etc':True, 'Screen to use':scrn, 'Fullscreen (timing errors if not)': fullscrn, 'Screen refresh rate': refreshRate }
+        infoFirst = { 'Autopilot':autopilot, 'Check refresh etc':True, 'Use External':scrn, 'Fullscreen (timing errors if not)': fullscrn, 'Screen refresh rate': refreshRate }
         OK = gui.DlgFromDict(dictionary=infoFirst,
             title='MOT',
-            order=['Autopilot','Check refresh etc', 'Screen to use', 'Screen refresh rate', 'Fullscreen (timing errors if not)'],
+            order=['Autopilot','Check refresh etc', 'Use External', 'Screen refresh rate', 'Fullscreen (timing errors if not)'],
             tip={'Check refresh etc': 'To confirm refresh rate and that can keep up, at least when drawing a grating',
-                    'Screen to use': '0 means primary screen, 1 means second screen'},
+                    'Screen to use': ''},
             )
         if not OK.OK:
             print('User cancelled from dialog box'); logging.info('User cancelled from dialog box'); core.quit()
         autopilot = infoFirst['Autopilot']
         checkRefreshEtc = infoFirst['Check refresh etc']
-        scrn = infoFirst['Screen to use']
+        scrn = infoFirst['Use External']
         print('scrn = ',scrn, ' from dialog box')
         fullscrn = infoFirst['Fullscreen (timing errors if not)']
         refreshRate = infoFirst['Screen refresh rate']
 
         #monitor parameters
-        widthPix = 1024 #1440  #monitor width in pixels
-        heightPix =768  #900 #monitor height in pixels
+        widthPix = 1920 #1440  #monitor width in pixels
+        heightPix =1200  #900 #monitor height in pixels
         monitorwidth = 40.5 #28.5 #monitor width in centimeters
         viewdist = 55.; #cm
         pixelperdegree = widthPix/ (atan(monitorwidth/viewdist) /np.pi*180)
@@ -188,17 +188,10 @@ logging.info(runInfo)
 logging.info('gammaGrid='+str(mon.getGammaGrid()))
 logging.info('linearizeMethod='+str(mon.getLinearizeMethod()))
 
-numResponsesPerTrial = 1 #default. Used to create headers for dataFile
-numTrialsPerCondition = 10
-stimList = []
-#Set up the factorial design (list of all conditions)
-for cuePos in cuePositions:
-    stimList.append({'cuePos':cuePos})
-
-trials = psychopy.data.TrialHandler(stimList, nReps = numTrialsPerCondition)
 ####Create output file###
 #########################################################################
 dataFile = open(fileNameWithPath + '.txt', 'w')
+numResponsesPerTrial = 1
 
 #headers for initial datafile rows, they don't get repeated. These appear in the file in the order they appear here.
 oneOffHeaders = [
@@ -209,15 +202,17 @@ oneOffHeaders = [
 ]
 
 for header in oneOffHeaders:
-    print(header, '\t', end='', file=dataFile
+    print(header, '\t', end='', file=dataFile)
 
 #Headers for duplicated datafile rows. These are repeated using numResponsesPerTrial. For instance, we might have two responses in a trial.
 duplicatedHeaders = [
-    'response',
-    'answer',
-    'correct',
-    'responsePos',
-    'correctPos'
+    'responseX',
+    'responseY',
+    'correctX',
+    'correctY',
+    'accuracy',
+    'responsePosInStream',
+    'correctPosPosInStream'
 ]
 
 for response in range(numResponsesPerTrial):
@@ -236,9 +231,11 @@ print('',file=dataFile)
 ######For instance, maybe you want random pairs of letters. Write a function!
 ###########################################################################
 
-# fixatnNoiseTexture = np.round( np.random.rand(fixSizePix/4,fixSizePix/4) ,0 )   *2.0-1 #Can counterphase flicker  noise texture to create salient flicker if you break fixation
+fixSizePix = 15
 
-# fixation= visual.PatchStim(myWin, tex=fixatnNoiseTexture, size=(fixSizePix,fixSizePix), units='pix', mask='circle', interpolate=False, autoLog=False)
+fixatnNoiseTexture = np.round( np.random.rand(fixSizePix/4,fixSizePix/4) ,0 )   *2.0-1 #Can counterphase flicker  noise texture to create salient flicker if you break fixation
+
+fixation= visual.PatchStim(myWin, tex=fixatnNoiseTexture, size=(fixSizePix,fixSizePix), units='pix', mask='circle', interpolate=False, autoLog=False)
 # fixationBlank= visual.PatchStim(myWin, tex= -1*fixatnNoiseTexture, size=(fixSizePix,fixSizePix), units='pix', mask='circle', interpolate=False, autoLog=False) #reverse contrast
 # fixationPoint= visual.PatchStim(myWin,tex='none',colorSpace='rgb',color=(1,1,1),size=10,units='pix',autoLog=autoLogging)
 
@@ -268,15 +265,78 @@ print('',file=dataFile)
 
 ####Functions. Save time by automating processes like stimulus creation and ordering
 ############################################################################
-def stimuliOnCircle(nDots, radius, center, stimulusObject, sameEachTime = True):
+
+def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, trialObjects):
+    cueFrame = (cuePos) * SOAFrames 
+    cueMax = cueFrame + cueFrames
+    showIdx = n/SOAFrames - 1
+    #objectIdxs = [i for i in range(len(trialObjects))]
+    #objectIdxs.append(len(trialObjects)-1) #AWFUL hack
+    #print(objectIdxs[showIdx])
+    #floored quotient
+    obj = trialObjects[showIdx]
+
+    drawObject = n%SOAFrames < itemFrames
+    if drawObject:
+        if n >= cueFrame and n < cueMax:
+            #print('cueFrames! n is', n,'. cueFrame is ,', cueFrame, 'cueFrame + cueFrames is ', (cueFrame + cueFrames))
+            if n%3 != 0: #This should make it flash, but it might be too fast
+                #print('cue flash')
+                obj.draw()
+        else:
+            obj.draw()
+    return True
+    #objects: Stimuli to display or
+    #cue: cue stimulus or stimuli
+    #timing parameters: Could be item duration, soa and isi. i.e. if SOA+Duration % n == 0: stimulus.setColor(stimulusColor)
+    #bgColor and stimulusColor: if displaying and hiding stimuli, i.e. for RSVP
+    #movementVector: direction and distance of movement if moving stimuli
+
+def oneTrial(stimuli):
+    dotOrder = np.arange(len(stimuli))
+    np.random.shuffle(dotOrder)
+    shuffledStimuli = [stimuli[i] for i in dotOrder]
+    for n in range(trialFrames):
+        fixation.draw()
+        #print(n//SOAFrames)
+        oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, shuffledStimuli)
+        myWin.flip()
+    return True, shuffledStimuli, dotOrder
+
+def getResponse(stimuli):
+    responded = False
+    quit = False
+    event.clearEvents()
+    escape = event.getKeys()
+    print(escape)
+    while not responded:
+        for item in stimuli:
+            item.draw()
+            if myMouse.isPressedIn(item):
+                accuracy = item.pos == stimuli[cuePos].pos
+                responsePos = item.pos
+                responded = True
+        myWin.flip()
+    if len(escape)>0:
+        quit = escape[0] == 'escape'
+        print(escape)
+    return accuracy, item, quit
+
+
+
+def drawStimuli(nDots, radius, center, stimulusObject, sameEachTime = True):
     if len(center) > 2 or len(center) < 2:
-        print 'Center coords must be list of length 2'
+        print('Center coords must be list of length 2')
         return None
-    if not sameEachTime & len(stimulusObject) != nDots:
-        print 'You want different objects in each position, but the number of positions does not equal the number of items'
+    if not sameEachTime and not isinstance(stimulusObject, (list, tuple)):
+        print('You want different objects in each position, but your stimuli is not a list or tuple')
+        return None
+    if not sameEachTime and isinstance(stimulusObject, (list, tuple)) & len(stimulusObject)!=nDots:
+        print('You want different objects in each position, but the number of positions does not equal the number of items')
+        return None
     spacing = 360./nDots
     stimuli = []
-    for dot in range(nDots):
+    for dot in range(nDots): #have to specify positions for multiples of 90deg because python (computers in general?) can't store exact value of pi and thus cos(pi/2) = 6.123e-17, not 0
         angle = dot*spacing
         if angle == 0:
             xpos = radius
@@ -295,61 +355,106 @@ def stimuliOnCircle(nDots, radius, center, stimulusObject, sameEachTime = True):
             ypos = radius*sin(radians(angle))
         if sameEachTime:
             stim = copy.copy(stimulusObject)
-        elif !sameEachTime:
+        elif not sameEachTime:
             stim = stimulusObject[dot]
-        stim.pos(xpos,ypos)
+        stim.pos = (xpos,ypos)
         stimuli.append(stim)
     return stimuli
 
+##Set up stimuli
+stimulus = visual.Circle(myWin, radius = .5, fillColor = (1,1,1) )
+nDots = 10
+radius = 4
+center = (0,0)
+sameEachTime = True
+    #(nDots, radius, center, stimulusObject, sameEachTime = True)
+stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
+print(stimuli)
+print('length of stimuli object', len(stimuli))
 
-def oneFrameOfStim(n, trialDurFrames, itemDurFrames, ISIFrames, cueDurFrames, cuePos, trialObjects):
-    cueFrame = cuePos * SOAFrames
-    SOAFrames = itemDurFrames + ISIFrames
-    objectIdx = n//SOAFrames #floored quotient
-    obj = trialObjects[objectIdx]
-    drawObject = n%SOAFrames < itemDurFrames
-    if drawObject:
-        if n >= cueFrame & n < (cueFrame + cueDurFrames):
-            if n%2 != 0: #This should make it flash, but it might be too fast
-                obj.draw()
-        else:
-            obj.draw()
-    return True
-    #objects: Stimuli to display or
-    #cue: cue stimulus or stimuli
-    #timing parameters: Could be item duration, soa and isi. i.e. if SOA+Duration % n == 0: stimulus.setColor(stimulusColor)
-    #bgColor and stimulusColor: if displaying and hiding stimuli, i.e. for RSVP
-    #movementVector: direction and distance of movement if moving stimuli
+###Trial timing parameters
+SOAMS = 300
+itemMS = 200
+ISIMS = SOAMS - itemMS
+trialMS = SOAMS * nDots
+cueMS = itemMS
 
-def oneTrial():
-	#number of locations
-	#SOA, duration
-	pass
+SOAFrames = int(np.floor(SOAMS/(1000./refreshRate)))
+itemFrames =  int(np.floor(itemMS/(1000./refreshRate)))
+ISIFrames =  int(np.floor(ISIMS/(1000./refreshRate)))
+trialFrames = int(np.floor(trialMS/(1000./refreshRate)))
+cueFrames = int(np.floor(cueMS/(1000./refreshRate)))
+print('cueFrames=',cueFrames)
+print('itemFrames=',itemFrames)
+print('refreshRate =', refreshRate)
+print('cueMS from frames =', cueFrames*(1000./refreshRate))
 
-def drawStimuli():
-    #content: letters to generate random pairs, pictures to display, maybe even descriptions of 2D shapes
-    #numStimuli: per trial? per session?
-    #color
-    #size: could be height (the appropriate parameter for fixed-width fonts) or Euclidean vectors
-    pass
+##Factorial design
+numResponsesPerTrial = 1 #default. Used to create headers for dataFile
+numTrialsPerCondition = 1
+stimList = []
+cuePositions = [1,1]
+#cuePositions = cuePositions[2:(nDots-3)] #drop the first and final two dots
+#Set up the factorial design (list of all conditions)
+for cuePos in cuePositions:
+    stimList.append({'cuePos':cuePos})
+
+trials = data.TrialHandler(stimList, nReps = numTrialsPerCondition)
+print(trials)
 
 expStop = False
 
 trialNum=0; numTrialsCorrect=0; expStop=False; framesSaved=0;
 print('Starting experiment of',trials.nTotal,'trials. Current trial is trial ',trialNum)
-NextRemindCountText.setText( str(trialNum) + ' of ' + str(trials.nTotal)     )
-NextRemindCountText.draw()
+#NextRemindCountText.setText( str(trialNum) + ' of ' + str(trials.nTotal)     )
+#NextRemindCountText.draw()
 myWin.flip()
 #end of header
 trialClock = core.Clock()
 stimClock = core.Clock()
-thisTrial = trials.next()
 ts = list();
 
-if eyetracking:
+if eyeTracking:
     if getEyeTrackingFileFromEyetrackingMachineAtEndOfExperiment:
         eyeMoveFile=('EyeTrack_'+subject+'_'+timeAndDateStr+'.EDF')
     tracker=Tracker_EyeLink(myWin,trialClock,subject,1, 'HV5',(255,255,255),(0,0,0),False,(widthPix,heightPix))
 
 while trialNum < trials.nTotal and expStop==False:
-	print("Doing trialNum",trialNum)
+    myWin.flip()
+    trial = trials.next()
+    print('trial idx is',trials.thisIndex)
+    cuePos = trial.cuePos
+    print(cuePos)
+    print("Doing trialNum",trialNum)
+    trialDone, trialStimuli, trialStimuliOrder = oneTrial(stimuli)
+    if trialDone:
+        accuracy, response, expStop = getResponse(trialStimuli)
+        
+        responseSpatial = response.pos.tolist()
+        print(responseSpatial)
+        print([i.pos.tolist() for i in trialStimuli])
+        trialPositions = [item.pos.tolist() for item in trialStimuli]
+        responseTemporal = trialPositions.index(responseSpatial)
+        print(trialPositions)
+        print(responseSpatial)
+        print(responseTemporal)
+        
+        correctSpatial = trialStimuli[cuePos].pos
+        correctTemporal = cuePos
+        
+        print(subject,'\t',
+        'dot-jump\t',
+        'False','\t',
+        trialNum,'\t',
+        responseSpatial[0],'\t',
+        responseSpatial[1],'\t',
+        correctSpatial[0],'\t',
+        correctSpatial[1],'\t',
+        accuracy,'\t',
+        responseTemporal,'\t',
+        correctTemporal,'\t',
+        file = dataFile
+        )
+        trialNum += 1
+if expStop:
+    dataFile.flush()
