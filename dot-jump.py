@@ -65,7 +65,7 @@ if True: #just so I can indent all the below
         mon = monitors.Monitor(monitorname,width=monitorwidth, distance=viewdist)#fetch the most recent calib for this monitor
         mon.setSizePix( (widthPix,heightPix) )
         myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscrn,scrn,waitBlank)
-        myMouse = event.Mouse(visible = 'true',win=myWin)
+        myMouse = event.Mouse(visible = False,win=myWin)
         myWin.setRecordFrameIntervals(False)
 
         mon = monitors.Monitor(monitorname,width=monitorwidth, distance=viewdist)#fetch the most recent calib for this monitor
@@ -210,14 +210,22 @@ duplicatedHeaders = [
     'responseY',
     'correctX',
     'correctY',
+    'clickX',
+    'clickY',
     'accuracy',
     'responsePosInStream',
-    'correctPosPosInStream'
+    'correctPosInStream',
+    'longFrames'
 ]
 
-for response in range(numResponsesPerTrial):
+if numResponsesPerTrial == 1:
     for header in duplicatedHeaders:
-        print(header+str(response+1), '\t', end='', file=dataFile)
+        print(header, '\t', end='', file=dataFile)
+
+elif numResponsesPerTrial > 1:
+    for response in range(numResponsesPerTrial):
+        for header in duplicatedHeaders:
+            print(header+str(response), '\t', end='', file=dataFile)
 
 #Headers done. Do a new line
 print('',file=dataFile)
@@ -267,9 +275,10 @@ fixation= visual.PatchStim(myWin, tex=fixatnNoiseTexture, size=(fixSizePix,fixSi
 ############################################################################
 
 def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, trialObjects):
-    cueFrame = (cuePos) * SOAFrames 
+    cueFrame = cuePos * SOAFrames
     cueMax = cueFrame + cueFrames
-    showIdx = n/SOAFrames - 1
+    showIdx = int(np.floor(n/SOAFrames))
+    
     #objectIdxs = [i for i in range(len(trialObjects))]
     #objectIdxs.append(len(trialObjects)-1) #AWFUL hack
     #print(objectIdxs[showIdx])
@@ -295,33 +304,42 @@ def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, trialObjects):
 def oneTrial(stimuli):
     dotOrder = np.arange(len(stimuli))
     np.random.shuffle(dotOrder)
+    print(dotOrder)
     shuffledStimuli = [stimuli[i] for i in dotOrder]
+    ts = []
+    t0 = trialClock.getTime()
     for n in range(trialFrames):
         fixation.draw()
         #print(n//SOAFrames)
         oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, shuffledStimuli)
         myWin.flip()
-    return True, shuffledStimuli, dotOrder
+        ts.append(trialClock.getTime() - t0)
+    return True, shuffledStimuli, dotOrder, ts
 
 def getResponse(stimuli):
     responded = False
-    quit = False
+    expStop = False
     event.clearEvents()
     escape = event.getKeys()
-    print(escape)
+    myMouse.setVisible(True)
     while not responded:
         for item in stimuli:
             item.draw()
-            if myMouse.isPressedIn(item):
-                accuracy = item.pos == stimuli[cuePos].pos
-                responsePos = item.pos
-                responded = True
         myWin.flip()
-    if len(escape)>0:
-        quit = escape[0] == 'escape'
-        print(escape)
-    return accuracy, item, quit
-
+        button = myMouse.getPressed()
+        mousePos = myMouse.getPos()
+        if button[0]:
+            responded = True
+    clickDistances = []
+    for item in stimuli:
+        xAbs = abs(item.pos[0] - mousePos[0])
+        yAbs = abs(item.pos[1] - mousePos[1])
+        distance = sqrt(xAbs**2 + yAbs**2)
+        clickDistances.append(distance)
+    minDistanceIdx = clickDistances.index(min(clickDistances))
+    accuracy = minDistanceIdx == cuePos
+    item = stimuli[minDistanceIdx]
+    return accuracy, item, expStop, mousePos
 
 
 def drawStimuli(nDots, radius, center, stimulusObject, sameEachTime = True):
@@ -331,7 +349,7 @@ def drawStimuli(nDots, radius, center, stimulusObject, sameEachTime = True):
     if not sameEachTime and not isinstance(stimulusObject, (list, tuple)):
         print('You want different objects in each position, but your stimuli is not a list or tuple')
         return None
-    if not sameEachTime and isinstance(stimulusObject, (list, tuple)) & len(stimulusObject)!=nDots:
+    if not sameEachTime and isinstance(stimulusObject, (list, tuple)) and len(stimulusObject)!=nDots:
         print('You want different objects in each position, but the number of positions does not equal the number of items')
         return None
     spacing = 360./nDots
@@ -361,16 +379,27 @@ def drawStimuli(nDots, radius, center, stimulusObject, sameEachTime = True):
         stimuli.append(stim)
     return stimuli
 
+def checkTiming(ts):
+    interframeIntervals = np.diff(ts) * 1000
+    #print(interframeIntervals)
+    frameTimeTolerance=.3 #proportion longer than refreshRate that will not count as a miss
+    longFrameLimit = np.round(1000/refreshRate*(1.0+frameTimeTolerance),2)
+    idxsInterframeLong = np.where( interframeIntervals > longFrameLimit ) [0] #frames that exceeded 150% of expected duration
+    numCasesInterframeLong = len( idxsInterframeLong )
+    if numCasesInterframeLong > 0:
+        print(numCasesInterframeLong,'frames of', trialFrames,'were longer than',str(1000/refreshRate*(1.0+frameTimeTolerance)))
+    return numCasesInterframeLong
+
 ##Set up stimuli
-stimulus = visual.Circle(myWin, radius = .5, fillColor = (1,1,1) )
-nDots = 10
+stimulus = visual.Circle(myWin, radius = .2, fillColor = (1,1,1) )
+nDots = 9
 radius = 4
 center = (0,0)
 sameEachTime = True
     #(nDots, radius, center, stimulusObject, sameEachTime = True)
 stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
-print(stimuli)
-print('length of stimuli object', len(stimuli))
+#print(stimuli)
+#print('length of stimuli object', len(stimuli))
 
 ###Trial timing parameters
 SOAMS = 300
@@ -382,25 +411,30 @@ cueMS = itemMS
 SOAFrames = int(np.floor(SOAMS/(1000./refreshRate)))
 itemFrames =  int(np.floor(itemMS/(1000./refreshRate)))
 ISIFrames =  int(np.floor(ISIMS/(1000./refreshRate)))
-trialFrames = int(np.floor(trialMS/(1000./refreshRate)))
+
+trialFrames = int(nDots*SOAFrames)
+
 cueFrames = int(np.floor(cueMS/(1000./refreshRate)))
 print('cueFrames=',cueFrames)
 print('itemFrames=',itemFrames)
 print('refreshRate =', refreshRate)
 print('cueMS from frames =', cueFrames*(1000./refreshRate))
+print('num of SOAs in the trial:', trialFrames/SOAFrames)
 
 ##Factorial design
 numResponsesPerTrial = 1 #default. Used to create headers for dataFile
 numTrialsPerCondition = 1
 stimList = []
-cuePositions = [1,1]
+#cuePositions = [dot for dot in range(nDots) if dot not in [0,nDots-1]]
+cuePositions = [1]
+print('cuePositions: ',cuePositions)
 #cuePositions = cuePositions[2:(nDots-3)] #drop the first and final two dots
 #Set up the factorial design (list of all conditions)
 for cuePos in cuePositions:
     stimList.append({'cuePos':cuePos})
 
 trials = data.TrialHandler(stimList, nReps = numTrialsPerCondition)
-print(trials)
+#print(trials)
 
 expStop = False
 
@@ -420,28 +454,30 @@ if eyeTracking:
     tracker=Tracker_EyeLink(myWin,trialClock,subject,1, 'HV5',(255,255,255),(0,0,0),False,(widthPix,heightPix))
 
 while trialNum < trials.nTotal and expStop==False:
+    print(expStop)
     myWin.flip()
     trial = trials.next()
-    print('trial idx is',trials.thisIndex)
+#    print('trial idx is',trials.thisIndex)
     cuePos = trial.cuePos
-    print(cuePos)
+#    print(cuePos)
     print("Doing trialNum",trialNum)
-    trialDone, trialStimuli, trialStimuliOrder = oneTrial(stimuli)
+    trialDone, trialStimuli, trialStimuliOrder, ts = oneTrial(stimuli)
+    nBlips = checkTiming(ts)
+#    print(trialStimuliOrder)
     if trialDone:
-        accuracy, response, expStop = getResponse(trialStimuli)
-        
+        accuracy, response, expStop, clickPos = getResponse(trialStimuli)
+
         responseSpatial = response.pos.tolist()
         print(responseSpatial)
-        print([i.pos.tolist() for i in trialStimuli])
         trialPositions = [item.pos.tolist() for item in trialStimuli]
         responseTemporal = trialPositions.index(responseSpatial)
-        print(trialPositions)
-        print(responseSpatial)
-        print(responseTemporal)
-        
+#        print('trial positions in sequence:',trialPositions)
+#        print('position of item nearest to click:',responseSpatial)
+#        print('Position in sequence of item nearest to click:',responseTemporal)
+
         correctSpatial = trialStimuli[cuePos].pos
         correctTemporal = cuePos
-        
+
         print(subject,'\t',
         'dot-jump\t',
         'False','\t',
@@ -450,9 +486,12 @@ while trialNum < trials.nTotal and expStop==False:
         responseSpatial[1],'\t',
         correctSpatial[0],'\t',
         correctSpatial[1],'\t',
+        clickPos[0],'\t',
+        clickPos[1],'\t',
         accuracy,'\t',
         responseTemporal,'\t',
         correctTemporal,'\t',
+        nBlips,
         file = dataFile
         )
         trialNum += 1
