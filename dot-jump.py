@@ -13,14 +13,16 @@ except Exception as e:
    print('Current directory is ',os.getcwd())
 
 eyeTracking = False
-try:
-    import eyelinkEyetrackerForPsychopySUPA3
-except Exception as e:
-    print(e)
-    print('Problem loading eyelinkEyetrackerForPsychopySUPA3. Check that the file eyelinkEyetrackerForPsychopySUPA3.py in the same directory as this file')
-    print('While a different version of pylink might make your eyetracking code work, your code appears to generally be out of date. Rewrite your eyetracker code based on the SR website examples')
-    #Psychopy v1.83.01 broke this, pylink version prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing. But what really needs to be done is to change eyetracking code to more modern calls, as indicated on SR site
-    eyeTracking = False
+
+if eyeTracking:
+    try:
+        import eyelinkEyetrackerForPsychopySUPA3
+    except Exception as e:
+        print(e)
+        print('Problem loading eyelinkEyetrackerForPsychopySUPA3. Check that the file eyelinkEyetrackerForPsychopySUPA3.py in the same directory as this file')
+        print('While a different version of pylink might make your eyetracking code work, your code appears to generally be out of date. Rewrite your eyetracker code based on the SR website examples')
+        #Psychopy v1.83.01 broke this, pylink version prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing. But what really needs to be done is to change eyetracking code to more modern calls, as indicated on SR site
+        eyeTracking = False
 
 expname= "dot-jump"
 demo = False; exportImages = False
@@ -41,15 +43,15 @@ if True: #just so I can indent all the below
         infoFirst = { 'Autopilot':autopilot, 'Check refresh etc':True, 'Use second screen':scrn, 'Fullscreen (timing errors if not)': fullscrn, 'Screen refresh rate': refreshRate }
         OK = gui.DlgFromDict(dictionary=infoFirst,
             title='MOT',
-            order=['Autopilot','Check refresh etc', 'Use External', 'Screen refresh rate', 'Fullscreen (timing errors if not)'],
+            order=['Autopilot','Check refresh etc', 'Use second screen', 'Screen refresh rate', 'Fullscreen (timing errors if not)'],
             tip={'Check refresh etc': 'To confirm refresh rate and that can keep up, at least when drawing a grating',
-                    'Screen to use': ''},
+                    'Use second Screen': ''},
             )
         if not OK.OK:
             print('User cancelled from dialog box'); logging.info('User cancelled from dialog box'); core.quit()
         autopilot = infoFirst['Autopilot']
         checkRefreshEtc = infoFirst['Check refresh etc']
-        scrn = infoFirst['Use External']
+        scrn = infoFirst['Use second screen']
         print('scrn = ',scrn, ' from dialog box')
         fullscrn = infoFirst['Fullscreen (timing errors if not)']
         refreshRate = infoFirst['Screen refresh rate']
@@ -67,12 +69,6 @@ if True: #just so I can indent all the below
         mon.setSizePix( (widthPix,heightPix) )
         myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscrn,scrn,waitBlank)
         myMouse = event.Mouse(visible = False,win=myWin)
-        myWin.setRecordFrameIntervals(False)
-
-        mon = monitors.Monitor(monitorname,width=monitorwidth, distance=viewdist)#fetch the most recent calib for this monitor
-        mon.setSizePix( (widthPix,heightPix) )
-        myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscrn,scrn,waitBlank)
-        myMouse = event.Mouse(visible = 'true',win=myWin)
         myWin.setRecordFrameIntervals(False)
 
         trialsPerCondition = 2 #default value
@@ -174,9 +170,7 @@ if msgWrongResolution != '':
     logging.error(msgWrongResolution)
 
 myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscrn,scrn,waitBlank)
-msg='Window opened'; print(msg); logging.info(msg)
-myMouse = event.Mouse(visible = 'true',win=myWin)
-msg='Mouse enabled'; print(msg); logging.info(msg)
+
 runInfo = psychopy.info.RunTimeInfo(
         win=myWin,    ## a psychopy.visual.Window() instance; None = default temp window used; False = no win, no win.flips()
         refreshTest='grating', ## None, True, or 'grating' (eye-candy to avoid a blank screen)
@@ -323,6 +317,7 @@ def getResponse(stimuli):
     expStop = False
     event.clearEvents()
     escape = event.getKeys()
+    myMouse.setPos((0,0))
     myMouse.setVisible(True)
     while not responded:
         for item in stimuli:
@@ -334,9 +329,9 @@ def getResponse(stimuli):
             responded = True
     clickDistances = []
     for item in stimuli:
-        xAbs = abs(item.pos[0] - mousePos[0])
-        yAbs = abs(item.pos[1] - mousePos[1])
-        distance = sqrt(xAbs**2 + yAbs**2)
+        x = mousePos[0] - item.pos[0]
+        y = mousePos[1] - item.pos[1]
+        distance = sqrt(x**2 + y**2)
         clickDistances.append(distance)
     minDistanceIdx = clickDistances.index(min(clickDistances))
     accuracy = minDistanceIdx == cuePos
@@ -449,7 +444,7 @@ myWin.flip()
 #end of header
 trialClock = core.Clock()
 stimClock = core.Clock()
-ts = list();
+
 
 if eyeTracking:
     if getEyeTrackingFileFromEyetrackingMachineAtEndOfExperiment:
@@ -469,7 +464,7 @@ while trialNum < trials.nTotal and expStop==False:
 #    print(trialStimuliOrder)
     if trialDone:
         accuracy, response, expStop, clickPos = getResponse(trialStimuli)
-
+        print(test)
         responseSpatial = response.pos.tolist()
         print(responseSpatial)
         trialPositions = [item.pos.tolist() for item in trialStimuli]
@@ -482,7 +477,7 @@ while trialNum < trials.nTotal and expStop==False:
         correctTemporal = cuePos
 
         print(subject,'\t',
-        'dot-jump\t',
+        'dot-jump','\t',
         'False','\t',
         trialNum,'\t',
         responseSpatial[0],'\t',
