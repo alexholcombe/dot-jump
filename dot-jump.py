@@ -18,7 +18,7 @@ try:
 except Exception as e:
     print(e)
     print('Problem loading eyelinkEyetrackerForPsychopySUPA3. Check that the file eyelinkEyetrackerForPsychopySUPA3.py in the same directory as this file')
-    #Psychopy v1.83.01 mistakenly included an old version of pylink which prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing
+    #Psychopy v1.83.01 broke this, pylink version prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing. But what really needs to be done is to change eyetracking code to more modern calls, as indicated on SR site
     eyeTracking = False
 
 expname= "dot-jump"
