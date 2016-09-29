@@ -38,7 +38,7 @@ if True: #just so I can indent all the below
         fullscrn=0; #show in small window (0) or full screen (1)
         scrn=True #which screen to display the stimuli. 0 is home screen, 1 is second screen
         # create a dialog from dictionary
-        infoFirst = { 'Autopilot':autopilot, 'Check refresh etc':True, 'Use External':scrn, 'Fullscreen (timing errors if not)': fullscrn, 'Screen refresh rate': refreshRate }
+        infoFirst = { 'Autopilot':autopilot, 'Check refresh etc':True, 'Use second screen':scrn, 'Fullscreen (timing errors if not)': fullscrn, 'Screen refresh rate': refreshRate }
         OK = gui.DlgFromDict(dictionary=infoFirst,
             title='MOT',
             order=['Autopilot','Check refresh etc', 'Use External', 'Screen refresh rate', 'Fullscreen (timing errors if not)'],
@@ -190,10 +190,7 @@ logging.info('gammaGrid='+str(mon.getGammaGrid()))
 logging.info('linearizeMethod='+str(mon.getLinearizeMethod()))
 
 ###############################
-### Setup the design and trial structure    ##############################################################################################
-##
-trialsPerCondition = 1
-=======
+
 ####Create output file###
 #########################################################################
 dataFile = open(fileNameWithPath + '.txt', 'w')
