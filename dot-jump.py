@@ -307,6 +307,7 @@ def oneTrial(stimuli):
     print(dotOrder)
     shuffledStimuli = [stimuli[i] for i in dotOrder]
     ts = []
+    myWin.flip(); myWin.flip() #Make sure raster at top of screen (unless not in blocking mode), and give CPU a chance to finish other tasks
     t0 = trialClock.getTime()
     for n in range(trialFrames):
         fixation.draw()
