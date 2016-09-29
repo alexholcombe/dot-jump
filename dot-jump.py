@@ -17,6 +17,7 @@ try:
 except Exception as e: 
     print(e)
     print('Problem loading eyelinkEyetrackerForPsychopySUPA3. Check that the file eyelinkEyetrackerForPsychopySUPA3.py in the same directory as this file')
+    print('While a different version of pylink might make your eyetracking code work, your code appears to generally be out of date. Rewrite your eyetracker code based on the SR website examples')
     #Psychopy v1.83.01 mistakenly included an old version of pylink which prevents EyelinkEyetrackerForPsychopySUPA3 stuff from importing
     eyeTracking = False
 
@@ -187,13 +188,22 @@ logging.info(runInfo)
 logging.info('gammaGrid='+str(mon.getGammaGrid()))
 logging.info('linearizeMethod='+str(mon.getLinearizeMethod()))
 
+###############################
+### Setup the design and trial structure    ##############################################################################################
+##
+trialsPerCondition = 1
 stimList = []
 #Set up the factorial design (list of all conditions)
-for targetOffset in [-1.00, 1.00]: 
-                for objToCueQuadrant in range(4):
-                    stimList.append( {'numCuesEachRing':numCuesEachRing,'numObjsEachRing':numObjsEachRing,'targetOffset':targetOffset,
-                                                'cueLeadTime':cueLeadTime,'speed':speed,'objToCueQuadrant':objToCueQuadrant,'direction':direction} )
-                                                
+numAngles = 12 #num of possible angles
+numRadii = 3 #num of possible radii
+#full factorial design of numAngles*numRadii. Although, don't know that we need to do that.
+for angle in np.arange(numAngles):
+    #for radius in np.arange(numRadii):
+        stimList.append( {'angle':angle} )
+
+trials = data.TrialHandler(stimList,trialsPerCondition) #constant stimuli method
+
+
 def oneFrameOfStim():
 	pass
 	
