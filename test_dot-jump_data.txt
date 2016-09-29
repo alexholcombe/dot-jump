@@ -1,0 +1,2 @@
+subject 	task 	staircase 	trialNum 	responseX 	responseY 	correctX 	correctY 	clickX 	clickY 	accuracy 	responsePosInStream 	correctPosInStream 	longFrames 	
+test 	 dot-jump	 False 	 0 	 4.0 	 0.0 	 0.694592710668 	 3.93923101205 	 3.95497513086 	 -0.263665008724 	 False 	 6 	 1 	 220
