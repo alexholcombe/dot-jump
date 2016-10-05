@@ -399,8 +399,8 @@ stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
 #print('length of stimuli object', len(stimuli))
 
 ###Trial timing parameters
-SOAMS = 300
-itemMS = 200
+SOAMS = 66.667
+itemMS = 22.222
 ISIMS = SOAMS - itemMS
 trialMS = SOAMS * nDots
 cueMS = itemMS

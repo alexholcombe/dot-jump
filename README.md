@@ -13,6 +13,10 @@ This program displays a dot that jumps between positions on a circle. The dot ap
 
 The dot (or whatever stimulus you desire) appears at `nDots` equally spaced locations on a circle with center coordinates `center` and a radius of `radius` degrees of visual angle. The dot appears for `itemMS` milliseconds with an SOA of `SOAMS`. 
 
+Based on Patrick's analysis code and the raw data from Paolo's script, the SOA was 66.667ms and the item appeared for 22.222ms. 
+* See DTDJ_Show_Models.m, line 30
+* on time and off time on lines 10 and 11 of any of the raw data files
+
 ####Data output
 These are the file headers. Coordinates are in degrees of visual angle and defined from the center of the window.
 
