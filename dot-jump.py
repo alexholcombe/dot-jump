@@ -68,7 +68,6 @@ if True: #just so I can indent all the below
         mon = monitors.Monitor(monitorname,width=monitorwidth, distance=viewdist)#fetch the most recent calib for this monitor
         mon.setSizePix( (widthPix,heightPix) )
         myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscrn,scrn,waitBlank)
-        myMouse = event.Mouse(visible = False,win=myWin)
         myWin.setRecordFrameIntervals(False)
 
         trialsPerCondition = 2 #default value
@@ -282,11 +281,12 @@ def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, trialObjects):
 
     drawObject = n%SOAFrames < itemFrames
     if drawObject:
+        myWin.color = bgColor
         if n >= cueFrame and n < cueMax:
             #print('cueFrames! n is', n,'. cueFrame is ,', cueFrame, 'cueFrame + cueFrames is ', (cueFrame + cueFrames))
-            if n%3 != 0: #This should make it flash, but it might be too fast
+            #if n%2 == 0: #This should make it flash, but it might be too fast
                 #print('cue flash')
-                obj.draw()
+            myWin.color = (0,0,0)
         else:
             obj.draw()
     return True
@@ -313,20 +313,25 @@ def oneTrial(stimuli):
     return True, shuffledStimuli, dotOrder, ts
 
 def getResponse(stimuli):
+    myMouse = event.Mouse(visible = False,win=myWin)
     responded = False
     expStop = False
     event.clearEvents()
+    mousePos = (1e6,1e6)
     escape = event.getKeys()
     myMouse.setPos((0,0))
     myMouse.setVisible(True)
     while not responded:
+        print(myMouse.getPos())
         for item in stimuli:
             item.draw()
         myWin.flip()
         button = myMouse.getPressed()
         mousePos = myMouse.getPos()
         if button[0]:
+            print('click detected')
             responded = True
+            print('getResponse mousePos:',mousePos)
     clickDistances = []
     for item in stimuli:
         x = mousePos[0] - item.pos[0]
@@ -389,7 +394,8 @@ def checkTiming(ts):
 
 ##Set up stimuli
 stimulus = visual.Circle(myWin, radius = .2, fillColor = (1,1,1) )
-nDots = 9
+nDots = 24
+
 radius = 4
 center = (0,0)
 sameEachTime = True
@@ -423,7 +429,7 @@ numResponsesPerTrial = 1 #default. Used to create headers for dataFile
 numTrialsPerCondition = 1
 stimList = []
 #cuePositions = [dot for dot in range(nDots) if dot not in [0,nDots-1]]
-cuePositions = [1]
+cuePositions = [9,15,19]
 print('cuePositions: ',cuePositions)
 #cuePositions = cuePositions[2:(nDots-3)] #drop the first and final two dots
 #Set up the factorial design (list of all conditions)
@@ -452,8 +458,9 @@ if eyeTracking:
     tracker=Tracker_EyeLink(myWin,trialClock,subject,1, 'HV5',(255,255,255),(0,0,0),False,(widthPix,heightPix))
 
 while trialNum < trials.nTotal and expStop==False:
-    print(expStop)
+    fixation.draw()
     myWin.flip()
+    core.wait(1)
     trial = trials.next()
 #    print('trial idx is',trials.thisIndex)
     cuePos = trial.cuePos
@@ -464,7 +471,6 @@ while trialNum < trials.nTotal and expStop==False:
 #    print(trialStimuliOrder)
     if trialDone:
         accuracy, response, expStop, clickPos = getResponse(trialStimuli)
-        print(test)
         responseSpatial = response.pos.tolist()
         print(responseSpatial)
         trialPositions = [item.pos.tolist() for item in trialStimuli]
@@ -475,7 +481,8 @@ while trialNum < trials.nTotal and expStop==False:
 
         correctSpatial = trialStimuli[cuePos].pos
         correctTemporal = cuePos
-
+        print(correctSpatial)
+        print(correctTemporal)
         print(subject,'\t',
         'dot-jump','\t',
         'False','\t',
