@@ -37,7 +37,7 @@ fullscrn=False
 waitBlank=False
 if True: #just so I can indent all the below
         refreshRate= 85 *1.0;  #160 #set to the framerate of the monitor
-        fullscrn=0; #show in small window (0) or full screen (1)
+        fullscrn=True; #show in small window (0) or full screen (1)
         scrn=True #which screen to display the stimuli. 0 is home screen, 1 is second screen
         # create a dialog from dictionary
         infoFirst = { 'Autopilot':autopilot, 'Check refresh etc':True, 'Use second screen':scrn, 'Fullscreen (timing errors if not)': fullscrn, 'Screen refresh rate': refreshRate }
@@ -57,8 +57,8 @@ if True: #just so I can indent all the below
         refreshRate = infoFirst['Screen refresh rate']
 
         #monitor parameters
-        widthPix = 1920 #1440  #monitor width in pixels
-        heightPix =1200  #900 #monitor height in pixels
+        widthPix = 1280 #1440  #monitor width in pixels
+        heightPix =1024  #900 #monitor height in pixels
         monitorwidth = 40.5 #28.5 #monitor width in centimeters
         viewdist = 55.; #cm
         pixelperdegree = widthPix/ (atan(monitorwidth/viewdist) /np.pi*180)
@@ -184,48 +184,6 @@ logging.info('linearizeMethod='+str(mon.getLinearizeMethod()))
 
 ###############################
 
-####Create output file###
-#########################################################################
-dataFile = open(fileNameWithPath + '.txt', 'w')
-numResponsesPerTrial = 1
-
-#headers for initial datafile rows, they don't get repeated. These appear in the file in the order they appear here.
-oneOffHeaders = [
-    'subject',
-    'task',
-    'staircase',
-    'trialNum'
-]
-
-for header in oneOffHeaders:
-    print(header, '\t', end='', file=dataFile)
-
-#Headers for duplicated datafile rows. These are repeated using numResponsesPerTrial. For instance, we might have two responses in a trial.
-duplicatedHeaders = [
-    'responseX',
-    'responseY',
-    'correctX',
-    'correctY',
-    'clickX',
-    'clickY',
-    'accuracy',
-    'responsePosInStream',
-    'correctPosInStream',
-    'longFrames'
-]
-
-if numResponsesPerTrial == 1:
-    for header in duplicatedHeaders:
-        print(header, '\t', end='', file=dataFile)
-
-elif numResponsesPerTrial > 1:
-    for response in range(numResponsesPerTrial):
-        for header in duplicatedHeaders:
-            print(header+str(response), '\t', end='', file=dataFile)
-
-#Headers done. Do a new line
-print('',file=dataFile)
-
 
 ######Create visual objects, noise masks, response prompts etc. ###########
 ######Draw your stimuli here if they don't change across trials, but other parameters do (like timing or distance)
@@ -233,11 +191,9 @@ print('',file=dataFile)
 ######For instance, maybe you want random pairs of letters. Write a function!
 ###########################################################################
 
-fixSizePix = 15
+fixSize = .1
 
-fixatnNoiseTexture = np.round( np.random.rand(fixSizePix/4,fixSizePix/4) ,0 )   *2.0-1 #Can counterphase flicker  noise texture to create salient flicker if you break fixation
-
-fixation= visual.PatchStim(myWin, tex=fixatnNoiseTexture, size=(fixSizePix,fixSizePix), units='pix', mask='circle', interpolate=False, autoLog=False)
+fixation= visual.Circle(myWin, radius = fixSize , fillColor = (1,1,1), units='deg')
 # fixationBlank= visual.PatchStim(myWin, tex= -1*fixatnNoiseTexture, size=(fixSizePix,fixSizePix), units='pix', mask='circle', interpolate=False, autoLog=False) #reverse contrast
 # fixationPoint= visual.PatchStim(myWin,tex='none',colorSpace='rgb',color=(1,1,1),size=10,units='pix',autoLog=autoLogging)
 
@@ -322,25 +278,31 @@ def getResponse(stimuli):
     myMouse.setPos((0,0))
     myMouse.setVisible(True)
     while not responded:
-        print(myMouse.getPos())
         for item in stimuli:
             item.draw()
         myWin.flip()
         button = myMouse.getPressed()
         mousePos = myMouse.getPos()
+        escapeKey = event.getKeys()
         if button[0]:
             print('click detected')
             responded = True
             print('getResponse mousePos:',mousePos)
+        elif len(escapeKey)>0:
+            if escapeKey[0] == 'space' or escapeKey[0] == 'ESCAPE':
+                expStop = True
+                responded = True
     clickDistances = []
     for item in stimuli:
         x = mousePos[0] - item.pos[0]
         y = mousePos[1] - item.pos[1]
         distance = sqrt(x**2 + y**2)
         clickDistances.append(distance)
-    minDistanceIdx = clickDistances.index(min(clickDistances))
-    accuracy = minDistanceIdx == cuePos
-    item = stimuli[minDistanceIdx]
+    if not expStop:
+        minDistanceIdx = clickDistances.index(min(clickDistances))
+        accuracy = minDistanceIdx == cuePos
+        item = stimuli[minDistanceIdx]
+        myMouse.setVisible(False)
     return accuracy, item, expStop, mousePos
 
 
@@ -426,10 +388,10 @@ print('num of SOAs in the trial:', trialFrames/SOAFrames)
 
 ##Factorial design
 numResponsesPerTrial = 1 #default. Used to create headers for dataFile
-numTrialsPerCondition = 1
+numTrialsPerCondition = 20
 stimList = []
 #cuePositions = [dot for dot in range(nDots) if dot not in [0,nDots-1]]
-cuePositions = [9,15,19]
+cuePositions = [i for i in range(nDots)]
 print('cuePositions: ',cuePositions)
 #cuePositions = cuePositions[2:(nDots-3)] #drop the first and final two dots
 #Set up the factorial design (list of all conditions)
@@ -439,6 +401,53 @@ for cuePos in cuePositions:
 
 trials = data.TrialHandler(stimList, nReps = numTrialsPerCondition)
 #print(trials)
+
+
+####Create output file###
+#########################################################################
+dataFile = open(fileNameWithPath + '.txt', 'w')
+numResponsesPerTrial = 1
+
+#headers for initial datafile rows, they don't get repeated. These appear in the file in the order they appear here.
+oneOffHeaders = [
+    'subject',
+    'task',
+    'staircase',
+    'trialNum'
+]
+
+for header in oneOffHeaders:
+    print(header, '\t', end='', file=dataFile)
+
+#Headers for duplicated datafile rows. These are repeated using numResponsesPerTrial. For instance, we might have two responses in a trial.
+duplicatedHeaders = [
+    'responseX',
+    'responseY',
+    'correctX',
+    'correctY',
+    'clickX',
+    'clickY',
+    'accuracy',
+    'responsePosInStream',
+    'correctPosInStream'
+]
+
+if numResponsesPerTrial == 1:
+    for header in duplicatedHeaders:
+        print(header, '\t', end='', file=dataFile)
+
+elif numResponsesPerTrial > 1:
+    for response in range(numResponsesPerTrial):
+        for header in duplicatedHeaders:
+            print(header+str(response), '\t', end='', file=dataFile)
+
+for pos in range(nDots):
+    print('position'+str(pos),'\t',end='',file=dataFile)
+
+#Headers done. Do a new line
+print('longFrames',file=dataFile)
+
+
 
 expStop = False
 
@@ -496,9 +505,13 @@ while trialNum < trials.nTotal and expStop==False:
         accuracy,'\t',
         responseTemporal,'\t',
         correctTemporal,'\t',
-        nBlips,
+        end='',
         file = dataFile
         )
+        for dot in range(nDots):
+            print(trialStimuliOrder[dot], '\t',end='', file=dataFile)
+        print(nBlips, file=dataFile)
         trialNum += 1
+        dataFile.flush()
 if expStop:
     dataFile.flush()
