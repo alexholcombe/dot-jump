@@ -27,18 +27,20 @@
 % This section contains some things that will need to be set locally,
 % depending on your directory structure and your data.
 
-% Provide the path.
-thisPath = '/Users/experimentalmode/Documents/MATLAB/TemporalDyslexia/DJ/';
+clear all;
+
+% Provide the path
+thisPath = '~/gitCode/dot-jump/testData/';
 
 % Provide the path to the PolarToIm function.
-addpath(genpath('/Users/experimentalmode/Documents/MATLAB/Toolboxes/Figures/'));
+addpath(genpath('/Users/experimentalmode/Documents/MATLAB/Add-Ons/PolarRectangularConv0.1/'));
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'Cases','Controls'};
+sampleNames = {'Charlie'};
 
 % Provide some properties of the data for each sample, in order
-allNParticipants = [15 19];         % Number of participants
+allNParticipants = [1 1];         % Number of participants
 allNPositions = [24 24];            % Number of items in a stream on each trial
 allNConditions = [1 1];             % Number of conditions
 

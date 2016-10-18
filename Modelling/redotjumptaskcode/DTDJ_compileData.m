@@ -3,9 +3,9 @@
 
 clear all; %#ok<CLSCR>
 
-allGroups = {'Cases','Controls'};
-dataDirectory = '/Users/experimentalmode/Documents/MATLAB/TemporalDyslexia/DJ/DataFiles/';
-saveDirectory = '/Users/experimentalmode/Documents/MATLAB/TemporalDyslexia/DJ/Data/';
+allGroups = {'Charlie'};
+dataDirectory = '~/gitCode/dot-jump/testData/';
+saveDirectory = '~/gitCode/dot-jump/testData/modelOutput/';
 
 
 % Specify the format of the data in the text files.
@@ -20,7 +20,7 @@ for thisPosition = 1:nPositions
 end
 
 dataFormats = {dataFormats; dataFormats};
-    
+
 % For each group, specify the columns containing certain data, in this
 % order:
 % 1: T1 Time
@@ -38,9 +38,9 @@ dataColumns = [3 1 4 2; ...
 % zeros. So make sure this is definitely higher than the actual maximum
 % number of trials.
 
-nTrialsMaxEstimate = 250;
+nTrialsMaxEstimate = 272;
 
-% Calculate the number of groups.            
+% Calculate the number of groups.
 nGroups = numel(allGroups);
 
 % Calculate the number of possible time errors.
@@ -51,10 +51,10 @@ for thisGroup = 1:nGroups
 
     % Output where we are to the command window.
     fprintf('\n\n%s\n', upper(allGroups{thisGroup}));
-    
+
     % Specify the correct data format.
     dataFormat = dataFormats{thisGroup};
-    
+
     % Get a list of files
     cd([dataDirectory allGroups{thisGroup}]);
     allContents = dir;
@@ -62,15 +62,15 @@ for thisGroup = 1:nGroups
     removeThese = strncmp('.',allContents,1);    % Find invalid entries (beginning with '.')
     allFiles = allContents(~removeThese);
     nTotalFiles = numel(allFiles);
-    
+
     allParticipants = cell(1,nTotalFiles);
-    
+
     % Get a list of unique participants.
     for thisFile = 1:nTotalFiles
-        
+
         thisFileName = allFiles{thisFile};
-        allParticipants{thisFile} = thisFileName(1:4);
-        
+        allParticipants{thisFile} = thisFileName(1:7);
+
     end
 
     allParticipants = unique(allParticipants);
@@ -89,11 +89,11 @@ for thisGroup = 1:nGroups
     allT1ErrorPosition = NaN(nParticipants,1,nTrialsMaxEstimate);
     allT1ErrorMatrix = zeros(nParticipants,nPossTimeErrors,nPositions);
     allT1ErrorCombinations = NaN(nParticipants,nTrialsMaxEstimate,min([nPossTimeErrors nPositions]),2);
-    
+
     nTrialsMaxActual = 0; % Start at zero, then compare each time
 
     % For each participant...
-        
+
     for thisParticipant = 1:nParticipants
 
         participantID = allParticipants(thisParticipant);
@@ -102,42 +102,42 @@ for thisGroup = 1:nGroups
         % Find the relevant files
         theseFiles = find(strncmp(allFiles,participantID,4));
         nFiles = numel(theseFiles);
-        
+
         startTrial = 1; % Location in the data matrix to start entering data
-        
+
         % For each file...
-        
+
         for thisFile = 1:nFiles
 
             % Open file.
             fileID = fopen(allFiles{theseFiles(thisFile)});
 
             % Read in the data.
-            thisRead = textscan(fileID,dataFormat,'Delimiter',' \t','HeaderLines',0,'MultipleDelimsAsOne',1);
+            thisRead = textscan(fileID,dataFormat,'Delimiter',' \t','HeaderLines',1,'MultipleDelimsAsOne',1);
 
             % Set the bounds in the data matrix for data entry.
             nTrials = numel(thisRead{dataColumns(thisGroup,1)});
             endTrial = startTrial+nTrials-1;
-            
+
             % 1: T1 Time
             % 2: T1 Position
             % 3: T1 Response Time
             % 4: T1 Response Position
-            
+
             % Enter the data.
             allT1Time(thisParticipant,1,startTrial:endTrial) = double(thisRead{dataColumns(thisGroup,1)});
             allT1Position(thisParticipant,1,startTrial:endTrial) = double(thisRead{dataColumns(thisGroup,2)});
             allT1ResponseTime(thisParticipant,1,startTrial:endTrial) = double(thisRead{dataColumns(thisGroup,3)});
             allT1ResponsePosition(thisParticipant,1,startTrial:endTrial) = double(thisRead{dataColumns(thisGroup,4)});
             allT1ErrorTime(thisParticipant,1,startTrial:endTrial) = double(thisRead{dataColumns(thisGroup,3)})-double(thisRead{dataColumns(thisGroup,1)});
-            
+
             % Array is circular, so we need to work out the minimum
             % absolute error.
             [minError,minPos] = min(mod([double(thisRead{dataColumns(thisGroup,4)})-double(thisRead{dataColumns(thisGroup,2)}),double(thisRead{dataColumns(thisGroup,2)})-double(thisRead{dataColumns(thisGroup,4)})],nPositions),[],2);
             thisError = (3-(2*minPos)) .* minError; % Adds the appropriate sign
-            
+
             allT1ErrorPosition(thisParticipant,1,startTrial:endTrial) = thisError;
-            
+
             % Add these trials to the error matrix. Add one count to every
             % possible combination of spatial/temporal errors on that
             % trial.
@@ -147,11 +147,11 @@ for thisGroup = 1:nGroups
             allPositionErrorB = mod(repmat(double(thisRead{dataColumns(thisGroup,4)}),1,nPositions) - allSequence, nPositions);
             [minError,minPos] = min(cat(3,allPositionErrorA,allPositionErrorB),[],3);
             allPositionError = (3-(2*minPos)) .* minError; % Adds the appropriate sign
-            
+
             allT1ErrorCombinations(thisParticipant,startTrial:endTrial,:,:) = cat(3,allTimeError, allPositionError);
-            
+
             nCombinations = numel(allTimeError);
-            
+
             for thisCombination = 1:nCombinations
                 thisTimePos = find(possTimeErrors==allTimeError(thisCombination));
                 thisPosPos = find(possPositionErrors==allPositionError(thisCombination));
@@ -161,23 +161,23 @@ for thisGroup = 1:nGroups
 
             % Close file.
             fclose(fileID);
-            
+
             % Location in the data matrix to continue entering data.
             startTrial = endTrial + 1;
 
         end
-        
+
         figure;
         imagesc(squeeze(allT1ErrorMatrix(thisParticipant,:,:)));
         axis square;
         colormap(gray);
-        
+
         % If this is the highest number of trials per participant so far,
         % store that number.
         nTrialsMaxActual = max([nTrialsMaxActual endTrial]);
 
     end
-    
+
     % Truncate the data matrices
     allT1Time = allT1Time(:,:,1:nTrialsMaxActual);
     allT1ResponseTime = allT1ResponseTime(:,:,1:nTrialsMaxActual);
@@ -186,10 +186,10 @@ for thisGroup = 1:nGroups
     allT1ErrorTime = allT1ErrorTime(:,:,1:nTrialsMaxActual);
     allT1ErrorPosition = allT1ErrorPosition(:,:,1:nTrialsMaxActual);
     allT1ErrorCombinations = allT1ErrorCombinations(:,1:nTrialsMaxActual,:,:);
-    
+
     % Save and end
     cd(saveDirectory);
     fileName = ['CompiledData_DTDJ_' allGroups{thisGroup}];
     save(fileName,'allT1Time','allT1Position','allT1ResponseTime','allT1ResponsePosition','allT1ErrorTime','allT1ErrorPosition','allT1ErrorMatrix','allT1ErrorCombinations');
-    
+
 end
