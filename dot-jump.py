@@ -101,6 +101,9 @@ if True: #just so I can indent all the below
 ### END Setup of the screen parameters    ##############################################################################################
 ####################################
 askUserAndConfirmExpParams = True
+
+if autopilot:
+    subject = 'autoTest'
 ###############################
 ### Ask user exp params    ##############################################################################################
 ## askUserAndConfirmExpParams
@@ -110,6 +113,17 @@ if askUserAndConfirmExpParams:
     if not autopilot:
         myDlg.addField('Subject code :', subject)
         dlgLabelsOrdered.append('subject')
+    else:
+        myDlg.addField('Subject code :', subject)
+        dlgLabelsOrdered.append('subject')
+        myDlg.addField('autoPilotTime:', 0, tip='Auto response time relative to cue')
+        myDlg.addField('randomTime:',False, tip = 'Add (rounded) gaussian N(0,2) error to time offset?')
+        myDlg.addField('autoPilotSpace:',0, tip='Auto response position relative to cue')
+        myDlg.addField('randomSpace:',False, tip = 'Add (rounded) gaussian N(0,2) error to space offset?')
+        dlgLabelsOrdered.append('autoPilotTime')
+        dlgLabelsOrdered.append('randomTime')
+        dlgLabelsOrdered.append('autoPilotSpace')
+        dlgLabelsOrdered.append('randomSpace')
     myDlg.addField('Trials per condition (default=' + str(trialsPerCondition) + '):', trialsPerCondition, tip=str(trialsPerCondition))
     dlgLabelsOrdered.append('trialsPerCondition')
     pctCompletedBreak = 50
@@ -126,14 +140,18 @@ if askUserAndConfirmExpParams:
     myDlg.show()
     if myDlg.OK: #unpack information from dialogue box
        thisInfo = myDlg.data #this will be a list of data returned from each field added in order
-       if not autopilot:
+       if autopilot:
            name=thisInfo[dlgLabelsOrdered.index('subject')]
            if len(name) > 0: #if entered something
              subject = name #change subject default name to what user entered
            trialsPerCondition = int( thisInfo[ dlgLabelsOrdered.index('trialsPerCondition') ] ) #convert string to integer
+           autoSpace = thisInfo[dlgLabelsOrdered.index('autoPilotSpace')]
+           autoTime = thisInfo[dlgLabelsOrdered.index('autoPilotTime')]
+           randomTime = thisInfo[dlgLabelsOrdered.index('randomTime')]
+           randomSpace = thisInfo[dlgLabelsOrdered.index('randomSpace')]
            print('trialsPerCondition=',trialsPerCondition)
            logging.info('trialsPerCondition ='+str(trialsPerCondition))
-    else:
+else:
        print('User cancelled from dialog box.'); logging.info('User cancelled from dialog box')
        logging.flush()
        core.quit()
@@ -228,7 +246,7 @@ def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, trialObjects):
     cueFrame = cuePos * SOAFrames
     cueMax = cueFrame + cueFrames
     showIdx = int(np.floor(n/SOAFrames))
-    
+
     #objectIdxs = [i for i in range(len(trialObjects))]
     #objectIdxs.append(len(trialObjects)-1) #AWFUL hack
     #print(objectIdxs[showIdx])
@@ -268,42 +286,65 @@ def oneTrial(stimuli):
         ts.append(trialClock.getTime() - t0)
     return True, shuffledStimuli, dotOrder, ts
 
-def getResponse(stimuli):
-    myMouse = event.Mouse(visible = False,win=myWin)
-    responded = False
-    expStop = False
-    event.clearEvents()
-    mousePos = (1e6,1e6)
-    escape = event.getKeys()
-    myMouse.setPos((0,0))
-    myMouse.setVisible(True)
-    while not responded:
-        for item in stimuli:
-            item.draw()
-        myWin.flip()
-        button = myMouse.getPressed()
-        mousePos = myMouse.getPos()
-        escapeKey = event.getKeys()
-        if button[0]:
-            print('click detected')
-            responded = True
-            print('getResponse mousePos:',mousePos)
-        elif len(escapeKey)>0:
-            if escapeKey[0] == 'space' or escapeKey[0] == 'ESCAPE':
-                expStop = True
+def getResponse(trialStimuli):
+    if autopilot:
+        spacing = 360./nDots
+        autoResponseIdx = cuePos + autoTime #The serial position of the response in the stream
+        if randomTime:
+            autoResponseIdx += int(round( np.random.normal(0,2) ))
+        itemAtTemporalSelection = trialStimuli[autoResponseIdx]
+        unshuffledPositions = [dot.pos.tolist() for dot in stimuli]
+        itemSpatial = unshuffledPositions.index(itemAtTemporalSelection.pos.tolist())
+        itemSpatial = itemSpatial + autoSpace
+        if randomSpace:
+            itemSpatial += int(round( np.random.normal(0,2) ))
+        while itemSpatial>23:
+            itemSpatial = itemSpatial - 23
+        #Once we have temporal pos of selected item relative to start of the trial
+        #Need to get the serial spatial pos of this item, so that we can select items around it based on the autoSpace offset
+        #print('itemSpatial is: ', itemSpatial)
+        selectionTemporal = trialStimuli.index(stimuli[itemSpatial]) #This seems redundant, but it tests that the item we've selected in space is the cued item in time. if the temporal and spatial offsets are 0, it should be the same as cuePos.
+        accuracy = cuePos == selectionTemporal
+        mousePos = (stimuli[itemSpatial].pos[0],stimuli[itemSpatial].pos[1])
+        expStop = False
+        item = stimuli[itemSpatial]
+        return accuracy, item, expStop, mousePos
+    elif not autopilot:
+        myMouse = event.Mouse(visible = False,win=myWin)
+        responded = False
+        expStop = False
+        event.clearEvents()
+        mousePos = (1e6,1e6)
+        escape = event.getKeys()
+        myMouse.setPos((0,0))
+        myMouse.setVisible(True)
+        while not responded:
+            for item in trialStimuli:
+                item.draw()
+            myWin.flip()
+            button = myMouse.getPressed()
+            mousePos = myMouse.getPos()
+            escapeKey = event.getKeys()
+            if button[0]:
+                print('click detected')
                 responded = True
-    clickDistances = []
-    for item in stimuli:
-        x = mousePos[0] - item.pos[0]
-        y = mousePos[1] - item.pos[1]
-        distance = sqrt(x**2 + y**2)
-        clickDistances.append(distance)
-    if not expStop:
-        minDistanceIdx = clickDistances.index(min(clickDistances))
-        accuracy = minDistanceIdx == cuePos
-        item = stimuli[minDistanceIdx]
-        myMouse.setVisible(False)
-    return accuracy, item, expStop, mousePos
+                print('getResponse mousePos:',mousePos)
+            elif len(escapeKey)>0:
+                if escapeKey[0] == 'space' or escapeKey[0] == 'ESCAPE':
+                    expStop = True
+                    responded = True
+        clickDistances = []
+        for item in trialStimuli:
+            x = mousePos[0] - item.pos[0]
+            y = mousePos[1] - item.pos[1]
+            distance = sqrt(x**2 + y**2)
+            clickDistances.append(distance)
+        if not expStop:
+            minDistanceIdx = clickDistances.index(min(clickDistances))
+            accuracy = minDistanceIdx == cuePos
+            item = trialStimuli[minDistanceIdx]
+            myMouse.setVisible(False)
+        return accuracy, item, expStop, mousePos
 
 
 def drawStimuli(nDots, radius, center, stimulusObject, sameEachTime = True):
@@ -388,10 +429,9 @@ print('num of SOAs in the trial:', trialFrames/SOAFrames)
 
 ##Factorial design
 numResponsesPerTrial = 1 #default. Used to create headers for dataFile
-numTrialsPerCondition = 20
 stimList = []
 #cuePositions = [dot for dot in range(nDots) if dot not in [0,nDots-1]]
-cuePositions = [i for i in range(nDots)]
+cuePositions = [10]
 print('cuePositions: ',cuePositions)
 #cuePositions = cuePositions[2:(nDots-3)] #drop the first and final two dots
 #Set up the factorial design (list of all conditions)
@@ -399,7 +439,7 @@ print('cuePositions: ',cuePositions)
 for cuePos in cuePositions:
     stimList.append({'cuePos':cuePos})
 
-trials = data.TrialHandler(stimList, nReps = numTrialsPerCondition)
+trials = data.TrialHandler(stimList, nReps = trialsPerCondition)
 #print(trials)
 
 
@@ -469,7 +509,8 @@ if eyeTracking:
 while trialNum < trials.nTotal and expStop==False:
     fixation.draw()
     myWin.flip()
-    core.wait(1)
+    if not autopilot:
+        core.wait(1)
     trial = trials.next()
 #    print('trial idx is',trials.thisIndex)
     cuePos = trial.cuePos
