@@ -3,7 +3,7 @@
 
 clear all; %#ok<CLSCR>
 
-allGroups = {'Charlie'};
+allGroups = {'Autopilot'};
 dataDirectory = '~/gitCode/dot-jump/testData/';
 saveDirectory = '~/gitCode/dot-jump/testData/modelOutput/';
 
@@ -12,7 +12,7 @@ saveDirectory = '~/gitCode/dot-jump/testData/modelOutput/';
 
 dataFormats = '%d%d%d%d';
 nPositions = 24;
-possTimeErrors = -11:12; % Possible time errors
+possTimeErrors = -10:13; % Possible time errors
 possPositionErrors = -11:12; % Possible position errors
 
 for thisPosition = 1:nPositions
@@ -38,7 +38,7 @@ dataColumns = [3 1 4 2; ...
 % zeros. So make sure this is definitely higher than the actual maximum
 % number of trials.
 
-nTrialsMaxEstimate = 272;
+nTrialsMaxEstimate = 250;
 
 % Calculate the number of groups.
 nGroups = numel(allGroups);
@@ -69,7 +69,7 @@ for thisGroup = 1:nGroups
     for thisFile = 1:nTotalFiles
 
         thisFileName = allFiles{thisFile};
-        allParticipants{thisFile} = thisFileName(1:7);
+        allParticipants{thisFile} = thisFileName(1:9);
 
     end
 

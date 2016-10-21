@@ -19,17 +19,22 @@
 % This section contains some things that will need to be set locally,
 % depending on your directory structure and your data.
 
+%add path for functions
+addpath(genpath('~/gitCode/dot-jump/Modelling/redotjumptaskcode/'))
+
+
 % Provide the path.
-thisPath = '/Users/experimentalmode/Documents/MATLAB/TemporalDyslexia/DJ/';
+thisPath = '~/gitCode/dot-jump/testData/';
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'Cases','Controls'};
+sampleNames = {'Autopilot'};
 
 % Provide some properties of the data for each sample, in order.
-allRates = [15 15];               % Item rate (items/sec)
-allNParticipants = [15 19];       % Number of participants
-allNConditions = [1 1];
+allRates = [15];               % Item rate (items/sec)
+allNParticipants = [1];       % Number of participants
+allNConditions = [1];
+nConditions = 1;
 
 % Set the alpha value for t-tests
 alphaVal = .05;
@@ -40,7 +45,7 @@ alphaVal = .05;
 % have many trials per lag. If efficacy is very low, estimates for latency
 % and precision are going to be based on very few trials and could be way
 % off.
-efficacyLimit = 0.1;
+efficacyLimit = 0.01;
 
 % The following two parameters should generally be set just a fraction
 % below the limits that were set during model fitting. This stops us from
@@ -95,7 +100,7 @@ for thisSample = 1:nSamples
     nParticipants = allNParticipants(thisSample);
 
     % Load data for the single-episode model (M1)
-    load(['ModelOutput_DTDJ_' sampleNames{thisSample} '_Single.mat']);
+    load(['modelOutput/ModelOutput_DTDJ_' sampleNames{thisSample} '_Single.mat']);
     
     % Then do calculations for each participant...
     for thisParticipant = 1:nParticipants
@@ -471,7 +476,7 @@ for thisSample = 1:nSamples
     subplot(2,4,4*thisSample);
 
     % Provide the path to the PolarToIm function.
-    addpath(genpath('/Users/experimentalmode/Documents/MATLAB/Toolboxes/Figures/'));
+    addpath(genpath('~/Documents/MATLAB/Add-Ons/PolarRectangularConv0.1/'));
 
     theseParams = [Efficacy_M(thisSample) Latency_M(thisSample)/allFactors(thisSample) ...
         Precision_M(thisSample)/allFactors(thisSample) Bias_M(thisSample)*(pi/180) ...

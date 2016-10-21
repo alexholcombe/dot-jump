@@ -8,17 +8,17 @@
 ### T1-T: temporal position of cued item, starts at 1
 ### T1-repP: temporal position of response
 ### then 24 cells, each representing an item in the stream. The serial position of the cell represents the temporal position of the item
-
+rm(list = ls())
 setwd('~/gitCode/dot-jump/')
 
-testData <- read.table('testData/CharlieOriginalTest.txt',sep='\t', stringsAsFactors = F, header = T)
+testData <- read.table('testData/autoTest_dot-jump21Oct2016_16-46.txt',sep='\t', stringsAsFactors = F, header = T)
 
 #clean up the accuracy column
 testData$accuracy <- gsub(pattern = ' ',replacement = '',x = testData$accuracy)
 testData$accuracy <- as.logical(testData$accuracy)
 
 #number of positions on the circle
-numPositions <- length(unique(testData$correctPosInStream))
+numPositions <- 24
 
 #spacing of those positions
 spacing <- (2*pi)/numPositions
@@ -30,18 +30,27 @@ correctSpatial <- c()
 for(row in 1:nrow(testData)){
   responseX <- testData$responseX[row]
   responseY <- testData$responseY[row]
-  angle <-  atan2(responseY, responseX) #rad
-  if(angle<0){
-    angle <- abs(angle) + pi
-  } 
-  thisResponseSpatial <- angle/spacing
-  thisResponseSpatial <- thisResponseSpatial + 1
+  
+  if(!0 %in% c(responseX, responseY)){
+    angle <-  atan2(responseY, responseX) #rad
+    if(angle<0){
+      angle <- 2*pi - abs(angle)
+    }  
+  }else if(responseX==0 & responseY>0){
+    angle = pi/2
+  }else if(responseX==0 & responseY<0){
+    angle = (3*pi)/2
+  }else if(responseX>0 & responseY==0){
+    angle = 0
+  }else if(responseX<0 & responseY==0){
+    angle = pi
+  }
+  thisResponseSpatial <- round(angle/spacing)
+  thisResponseSpatial <- thisResponseSpatial
+  print(paste(responseX, responseY, angle, thisResponseSpatial))
   responseSpatial <- c(responseSpatial, thisResponseSpatial)
   correctSpatial <- c(correctSpatial, 
-                      testData[row, 
-                               paste0('position', testData$correctPosInStream[row]
-                                      )
-                               ]
+                      testData[row, 'position10']
                       )
 }
 
@@ -64,14 +73,20 @@ expectedFormat <- testData[,c('correctSpatial','responseSpatial', 'correctPosInS
 
 #Shift the positions to match the matlab code's expectations (I'll change this in the experiment code eventually)
 for(col in 1:ncol(expectedFormat)){
-  temp <- expectedFormat[,col]
-  for(item in 1:length(temp)){
-    if(temp[item]<5){temp[item] <- temp[item]+20 
-    }else if(temp[item]>=5){temp[item] <- temp[item]-4}
+  if(!col %in% c(3,4)){
+    temp <- expectedFormat[,col]
+    for(item in 1:length(temp)){
+      if(temp[item]<5){temp[item] <- temp[item]+20 
+      }else if(temp[item]>=5){temp[item] <- temp[item]-4}
+    }
+  } else{ #If it's a time column
+    temp <- expectedFormat[,col]
+    temp <- temp + 1
   }
+  temp <- as.integer(temp)
   expectedFormat[,col] <- temp
 }
 
 colnames(expectedFormat) <- c('T1-P','T1-repP', 'T1-T','T1-repT', rep(NULL, times=24))
 
-write.table(x = expectedFormat, file = 'testData/Charlie1.txt', sep='\t',row.names = F)
+write.table(x = expectedFormat, file = 'testData/Autopilot/Autopilot1.txt', sep='\t',row.names = F, col.names = F)

@@ -1,0 +1,2 @@
+Group,Accuracy_C1,Efficacy_C1,Latency_C1,Precision_C1,Bias_C1,Spread_C1
+1,1.0000,1.0000,0.3797,6.6670,-0.0002,2.5638

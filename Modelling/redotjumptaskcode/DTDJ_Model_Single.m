@@ -33,19 +33,20 @@ clear all;
 thisPath = '~/gitCode/dot-jump/testData/';
 
 % Provide the path to the PolarToIm function.
-addpath(genpath('/Users/experimentalmode/Documents/MATLAB/Add-Ons/PolarRectangularConv0.1/'));
+addpath(genpath('~/Documents/MATLAB/Add-Ons/PolarRectangularConv0.1/'));
+addpath(genpath('~/gitCode/dot-jump/Modelling/redotjumptaskcode/'))
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'Charlie'};
+sampleNames = {'Autopilot'};
 
 % Provide some properties of the data for each sample, in order
-allNParticipants = [1 1];         % Number of participants
-allNPositions = [24 24];            % Number of items in a stream on each trial
-allNConditions = [1 1];             % Number of conditions
+allNParticipants = [1];         % Number of participants
+allNPositions = [24];            % Number of items in a stream on each trial
+allNConditions = [1];             % Number of conditions
 
 % Set some model-fitting parameters.
-nReplicates = 100;                          % Number of times to repeat each fit with different starting values
+nReplicates = 1000;                          % Number of times to repeat each fit with different starting values
 smallNonZeroNumber = 10^-5;                 % Useful number for when limits can't be exactly zero but can be anything larger
 fitMaxIter = 10^4;                          % Maximum number of fit iterations
 fitMaxFunEvals = 10^4;                      % Maximum number of model evaluations
@@ -57,7 +58,7 @@ fitMaxFunEvals = 10^4;                      % Maximum number of model evaluation
 % e.g. you were analysing data with an unusually high or low item rate.
 muBound_t = 4;      % Time
 sigmaBound_t = 4;
-muBound_x = 1;      % Space (radians)
+muBound_x = pi/2;      % Space (radians)
 kappaBounds_x = [1 500]; % The upper bound is just to stop NaNs;
 
 % Ordinarily you wouldn't want to change these, but you might want to 
@@ -122,7 +123,7 @@ for thisSample = 1:nSamples
     end
     
     % Set fit options.
-    options = statset('MaxIter', fitMaxIter, 'MaxFunEvals', fitMaxFunEvals, 'Display', 'off');
+    options = statset('MaxIter', fitMaxIter, 'MaxFunEvals', fitMaxFunEvals, 'Display', 'iter');
 
     % Cycle through each participant.
     for thisParticipant = 1:nParticipants
