@@ -3,7 +3,7 @@
 
 clear all; %#ok<CLSCR>
 
-allGroups = {'Autopilot'};
+allGroups = {'Charlie'};
 dataDirectory = '~/gitCode/dot-jump/testData/';
 saveDirectory = '~/gitCode/dot-jump/testData/modelOutput/';
 

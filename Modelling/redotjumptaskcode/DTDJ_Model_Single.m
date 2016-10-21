@@ -38,7 +38,7 @@ addpath(genpath('~/gitCode/dot-jump/Modelling/redotjumptaskcode/'))
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'Autopilot'};
+sampleNames = {'Charlie'};
 
 % Provide some properties of the data for each sample, in order
 allNParticipants = [1];         % Number of participants

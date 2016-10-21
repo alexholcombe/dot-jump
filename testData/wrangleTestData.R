@@ -11,7 +11,7 @@
 rm(list = ls())
 setwd('~/gitCode/dot-jump/')
 
-testData <- read.table('testData/autoTest_dot-jump21Oct2016_16-46.txt',sep='\t', stringsAsFactors = F, header = T)
+testData <- read.table('testData/charliefixedcue.txt',sep='\t', stringsAsFactors = F, header = T)
 
 #clean up the accuracy column
 testData$accuracy <- gsub(pattern = ' ',replacement = '',x = testData$accuracy)
@@ -89,4 +89,4 @@ for(col in 1:ncol(expectedFormat)){
 
 colnames(expectedFormat) <- c('T1-P','T1-repP', 'T1-T','T1-repT', rep(NULL, times=24))
 
-write.table(x = expectedFormat, file = 'testData/Autopilot/Autopilot1.txt', sep='\t',row.names = F, col.names = F)
+write.table(x = expectedFormat, file = 'testData/Charlie/Charlie1.txt', sep='\t',row.names = F, col.names = F)
