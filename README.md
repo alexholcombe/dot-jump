@@ -39,7 +39,7 @@ See test\_dot-jump\_data.txt for an example of the output
 
 ####Autopiloting
 Selecting autopilot in the initial dialogue box brings adds some options to the experiment parameters
-*autoTime: The temporal offset for the autopilot. This value is the difference in serial temporal position of the item selected by the autopilot relative to the cue. Positive values select later items. Negative values selecter earlier items.
-*autoSpace: The offset in serial spatial position. Positive values select items clockwise from the cue. Negative values select items anticlockwise from the cue.
-*randomTime: On each trial, adds a random selection from the normal distribution N(0,2), rounded to the nearest integer to the time offset.
-*randomSpace: The same as randomTime, but to the spatial offset.
+* autoTime: The temporal offset for the autopilot. This value is the difference in serial temporal position of the item selected by the autopilot relative to the cue. Positive values select later items. Negative values selecter earlier items.
+* autoSpace: The offset in serial spatial position. Positive values select items clockwise from the cue. Negative values select items anticlockwise from the cue.
+* randomTime: On each trial, adds a random selection from the normal distribution N(0,2), rounded to the nearest integer to the time offset.
+* randomSpace: The same as randomTime, but to the spatial offset.
