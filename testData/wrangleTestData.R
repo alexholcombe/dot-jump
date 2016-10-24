@@ -1,5 +1,5 @@
-#Convert positions from the experiment output, which is 0 at (radius, 0) and 
-#increases clockwise around the circle, to the position expected by the matlab 
+#Convert positions from the experiment output, which is 0 at (radius, 0) and
+#increases clockwise around the circle, to the position expected by the matlab
 #code, which is 1 at (0, radius) and increases clockwise around the circle
 
 #Within a single row, the original data has this format:
@@ -30,12 +30,13 @@ correctSpatial <- c()
 for(row in 1:nrow(testData)){
   responseX <- testData$responseX[row]
   responseY <- testData$responseY[row]
-  
+
   if(!0 %in% c(responseX, responseY)){
     angle <-  atan2(responseY, responseX) #rad
     if(angle<0){
+      print(paste('atan output is ', angle, 'x is ', responseX, 'y is', responseY))
       angle <- 2*pi - abs(angle)
-    }  
+    }
   }else if(responseX==0 & responseY>0){
     angle = pi/2
   }else if(responseX==0 & responseY<0){
@@ -49,7 +50,7 @@ for(row in 1:nrow(testData)){
   thisResponseSpatial <- thisResponseSpatial
   print(paste(responseX, responseY, angle, thisResponseSpatial))
   responseSpatial <- c(responseSpatial, thisResponseSpatial)
-  correctSpatial <- c(correctSpatial, 
+  correctSpatial <- c(correctSpatial,
                       testData[row, 'position10']
                       )
 }
@@ -73,14 +74,8 @@ expectedFormat <- testData[,c('correctSpatial','responseSpatial', 'correctPosInS
 
 #Shift the positions to match the matlab code's expectations (I'll change this in the experiment code eventually)
 for(col in 1:ncol(expectedFormat)){
-  if(!col %in% c(3,4)){
-    temp <- expectedFormat[,col]
-    for(item in 1:length(temp)){
-      if(temp[item]<5){temp[item] <- temp[item]+20 
-      }else if(temp[item]>=5){temp[item] <- temp[item]-4}
-    }
-  } else{ #If it's a time column
-    temp <- expectedFormat[,col]
+  temp <- expectedFormat[,col] #Sometimes there are weird formatting errors. Doubles or floats that the MM code can't deal with. So select every collumn and make it an int vector
+  if(col %in% c(3,4)){ #If it's a time column
     temp <- temp + 1
   }
   temp <- as.integer(temp)
