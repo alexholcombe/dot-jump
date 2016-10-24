@@ -1,7 +1,7 @@
 from __future__ import print_function
 __author__ = """Alex "O." Holcombe, Charles Ludowici, """ ## double-quotes will be silently removed, single quotes will be left, eg, O'Connor
 import time, sys, platform, os
-from math import atan, pi, cos, sin, sqrt, ceil, radians, degrees
+from math import atan, atan2, pi, cos, sin, sqrt, ceil, radians, degrees
 import numpy as np
 import psychopy, psychopy.info
 import copy
@@ -200,44 +200,6 @@ logging.info(runInfo)
 logging.info('gammaGrid='+str(mon.getGammaGrid()))
 logging.info('linearizeMethod='+str(mon.getLinearizeMethod()))
 
-###############################
-
-
-######Create visual objects, noise masks, response prompts etc. ###########
-######Draw your stimuli here if they don't change across trials, but other parameters do (like timing or distance)
-######If you want to automate your stimuli. Do it in a function below and save clutter.
-######For instance, maybe you want random pairs of letters. Write a function!
-###########################################################################
-
-fixSize = .1
-
-fixation= visual.Circle(myWin, radius = fixSize , fillColor = (1,1,1), units='deg')
-# fixationBlank= visual.PatchStim(myWin, tex= -1*fixatnNoiseTexture, size=(fixSizePix,fixSizePix), units='pix', mask='circle', interpolate=False, autoLog=False) #reverse contrast
-# fixationPoint= visual.PatchStim(myWin,tex='none',colorSpace='rgb',color=(1,1,1),size=10,units='pix',autoLog=autoLogging)
-
-# numChecksAcross = 128
-# nearestPowerOfTwo = round( sqrt(numChecksAcross) )**2 #Because textures (created on next line) must be a power of 2
-# whiteNoiseTexture = np.round( np.random.rand(nearestPowerOfTwo,nearestPowerOfTwo) ,0 )   *2.0-1 #Can counterphase flicker  noise texture to create salient flicker if you break fixation
-# noiseMask= visual.PatchStim(myWin, tex=whiteNoiseTexture, size=(widthPix,heightPix), units='pix', interpolate=False, autoLog=autoLogging)
-# whiteNoiseTexture2 = np.round( np.random.rand(nearestPowerOfTwo,nearestPowerOfTwo) ,0 )   *2.0-1 #Can counterphase flicker  noise texture to create salient flicker if you break fixation
-# noiseMask2= visual.PatchStim(myWin, tex=whiteNoiseTexture2, size=(widthPix,heightPix), units='pix', interpolate=False, autoLog=autoLogging)
-# whiteNoiseTexture3 = np.round( np.random.rand(nearestPowerOfTwo,nearestPowerOfTwo) ,0 )   *2.0-1 #Can counterphase flicker  noise texture to create salient flicker if you break fixation
-# noiseMask3= visual.PatchStim(myWin, tex=whiteNoiseTexture3, size=(widthPix,heightPix), units='pix', interpolate=False, autoLog=autoLogging)
-# whiteNoiseTexture4 = np.round( np.random.rand(nearestPowerOfTwo,nearestPowerOfTwo) ,0 )   *2.0-1
-# noiseMask4= visual.PatchStim(myWin, tex=whiteNoiseTexture4, size=(widthPix,heightPix), units='pix', interpolate=False, autoLog=autoLogging)
-# whiteNoiseTexture5 = np.round( np.random.rand(nearestPowerOfTwo,nearestPowerOfTwo) ,0 )   *2.0-1
-# noiseMask5= visual.PatchStim(myWin, tex=whiteNoiseTexture5, size=(widthPix,heightPix), units='pix', interpolate=False, autoLog=autoLogging)
-
-# noiseMasks = [noiseMask, noiseMask2, noiseMask3, noiseMask4, noiseMask5]
-
-# respPromptStim = visual.TextStim(myWin,pos=(0, -.9),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=.1,units='norm',autoLog=autoLogging)
-
-# acceptTextStim = visual.TextStim(myWin,pos=(0, -.8),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=.1,units='norm',autoLog=autoLogging)
-# acceptTextStim.setText('Hit ENTER to accept. Backspace to edit')
-
-# respStim = visual.TextStim(myWin,pos=(0,0),colorSpace='rgb',color=(1,1,0),alignHoriz='center', alignVert='center',height=.16,units='norm',autoLog=autoLogging)
-
-
 
 ####Functions. Save time by automating processes like stimulus creation and ordering
 ############################################################################
@@ -260,7 +222,9 @@ def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, trialObjects):
             #print('cueFrames! n is', n,'. cueFrame is ,', cueFrame, 'cueFrame + cueFrames is ', (cueFrame + cueFrames))
             #if n%2 == 0: #This should make it flash, but it might be too fast
                 #print('cue flash')
-            myWin.color = (0,0,0)
+            #myWin.color = (0,0,0)
+            obj.draw()
+            cue.draw()
         else:
             obj.draw()
     return True
@@ -395,6 +359,30 @@ def checkTiming(ts):
         print(numCasesInterframeLong,'frames of', trialFrames,'were longer than',str(1000/refreshRate*(1.0+frameTimeTolerance)))
     return numCasesInterframeLong
 
+def getSpatialIdxFromCoord(Coord):
+    x = Coord[0]
+    y = Coord[1]
+    spacing = (2*pi)/nDots
+    if x ==0 and y>0:
+        SpatialIdx = 1
+    elif x == 0 and y < 0:
+        SpatialIdx = 1 + (nDots/2)
+    elif x > 0 and y == 0:
+        SpatialIdx = 1 + (3*nDots/4)
+    elif x<0 and y == 0:
+        SpatialIdx = 1 + (nDots/4)
+    else:
+        angle = atan2(y,x)
+        if angle < 0:
+            angle = (2*pi) + angle
+        posRelativeToPositiveXAxis = round(angle/spacing)
+        if posRelativeToPositiveXAxis <=(nDots/4 - 1):
+            SpatialIdx = posRelativeToPositiveXAxis + 19
+        elif posRelativeToPositiveXAxis > (nDots/4 -1):
+            SpatialIdx = posRelativeToPositiveXAxis - 4
+    return SpatialIdx
+
+
 ##Set up stimuli
 stimulus = visual.Circle(myWin, radius = .2, fillColor = (1,1,1) )
 nDots = 24
@@ -406,6 +394,18 @@ sameEachTime = True
 stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
 #print(stimuli)
 #print('length of stimuli object', len(stimuli))
+
+######Create visual objects, noise masks, response prompts etc. ###########
+######Draw your stimuli here if they don't change across trials, but other parameters do (like timing or distance)
+######If you want to automate your stimuli. Do it in a function below and save clutter.
+######For instance, maybe you want random pairs of letters. Write a function!
+###########################################################################
+
+fixSize = .1
+fixation= visual.Circle(myWin, radius = fixSize , fillColor = (1,1,1), units=units)
+
+cue = visual.Circle(myWin, radius = radius + 2, fillColor = None, lineColor = (1,1,1), units = units)
+
 
 ###Trial timing parameters
 SOAMS = 66.667
@@ -461,6 +461,7 @@ for header in oneOffHeaders:
 
 #Headers for duplicated datafile rows. These are repeated using numResponsesPerTrial. For instance, we might have two responses in a trial.
 duplicatedHeaders = [
+    'responseSpatialPos',
     'responseX',
     'responseY',
     'correctX',
@@ -517,14 +518,34 @@ while trialNum < trials.nTotal and expStop==False:
 #    print(cuePos)
     print("Doing trialNum",trialNum)
     trialDone, trialStimuli, trialStimuliOrder, ts = oneTrial(stimuli)
+    #Shift positions so that the list starts at 1, which is positioned at (0,radius), and increases clockwise. This is what the MM code expects
+    MMPositions = list() #Mixture modelling positions
+    for dotPos in trialStimuliOrder:
+        if dotPos < (nDots/4 - 1): #Because python indexes start at 0, 5 is the 6th pos.
+            MMPositions.append(dotPos + 20)
+        elif dotPos >= (nDots/4 -1):
+            MMPositions.append(dotPos -4)
+    print('MMPositions length is', len(MMPositions))
+    print('MMPositions...')
+    print('\t', MMPositions)
     nBlips = checkTiming(ts)
 #    print(trialStimuliOrder)
     if trialDone:
         accuracy, response, expStop, clickPos = getResponse(trialStimuli)
-        responseSpatial = response.pos.tolist()
-        print(responseSpatial)
+        responseCoord = response.pos.tolist()
+        spatialRelativeToXAxis = [item.pos.tolist() for item in stimuli]
+        print('spatialRelativeToXAxis', spatialRelativeToXAxis)
+        try:
+            responseSpatialRelativeToXAxis  = spatialRelativeToXAxis.index(responseCoord)
+        except ValueError:
+            print('coord not in list')
+        if responseSpatialRelativeToXAxis < (nDots/4-1):
+            responseSpatial = responseSpatialRelativeToXAxis + 20
+        elif responseSpatialRelativeToXAxis >= (nDots/4-1):
+            responseSpatial = responseSpatialRelativeToXAxis - 4
+        print(responseCoord)
         trialPositions = [item.pos.tolist() for item in trialStimuli]
-        responseTemporal = trialPositions.index(responseSpatial)
+        responseTemporal = trialPositions.index(responseCoord)
 #        print('trial positions in sequence:',trialPositions)
 #        print('position of item nearest to click:',responseSpatial)
 #        print('Position in sequence of item nearest to click:',responseTemporal)
@@ -537,8 +558,9 @@ while trialNum < trials.nTotal and expStop==False:
         'dot-jump','\t',
         'False','\t',
         trialNum,'\t',
-        responseSpatial[0],'\t',
-        responseSpatial[1],'\t',
+        responseSpatial,'\t',
+        responseCoord[0],'\t',
+        responseCoord[1],'\t',
         correctSpatial[0],'\t',
         correctSpatial[1],'\t',
         clickPos[0],'\t',
@@ -550,7 +572,7 @@ while trialNum < trials.nTotal and expStop==False:
         file = dataFile
         )
         for dot in range(nDots):
-            print(trialStimuliOrder[dot], '\t',end='', file=dataFile)
+            print(MMPositions[dot], '\t',end='', file=dataFile)
         print(nBlips, file=dataFile)
         trialNum += 1
         dataFile.flush()
