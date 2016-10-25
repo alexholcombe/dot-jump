@@ -28,26 +28,6 @@ responseSpatial <- c()
 correctSpatial <- c()
 
 for(row in 1:nrow(testData)){
-  responseX <- testData$responseX[row]
-  responseY <- testData$responseY[row]
-
-  if(!0 %in% c(responseX, responseY)){
-    angle <-  atan2(responseY, responseX) #rad
-    if(angle<0){
-      print(paste('atan output is ', angle, 'x is ', responseX, 'y is', responseY))
-      angle <- 2*pi - abs(angle)
-    }
-  }else if(responseX==0 & responseY>0){
-    angle = pi/2
-  }else if(responseX==0 & responseY<0){
-    angle = (3*pi)/2
-  }else if(responseX>0 & responseY==0){
-    angle = 0
-  }else if(responseX<0 & responseY==0){
-    angle = pi
-  }
-  thisResponseSpatial <- round(angle/spacing)
-  thisResponseSpatial <- thisResponseSpatial
   print(paste(responseX, responseY, angle, thisResponseSpatial))
   responseSpatial <- c(responseSpatial, thisResponseSpatial)
   correctSpatial <- c(correctSpatial,

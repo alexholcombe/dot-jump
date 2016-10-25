@@ -28,17 +28,21 @@ expname= "dot-jump"
 demo = False; exportImages = False
 autopilot = False
 subject='test'
+
+
 ###############################
-### Setup the screen parameters    ##############################################################################################
-##
+### Setup the screen parameters    ##########
+###############################
 allowGUI = False
 units='deg' #'cm'
-fullscrn=False
 waitBlank=False
+refreshRate= 85 *1.0;  #160 #set to the framerate of the monitor
+fullscrn=True; #show in small window (0) or full screen (1)
+scrn=True
+
+
 if True: #just so I can indent all the below
-        refreshRate= 85 *1.0;  #160 #set to the framerate of the monitor
-        fullscrn=True; #show in small window (0) or full screen (1)
-        scrn=True #which screen to display the stimuli. 0 is home screen, 1 is second screen
+#which screen to display the stimuli. 0 is home screen, 1 is second screen
         # create a dialog from dictionary
         infoFirst = { 'Autopilot':autopilot, 'Check refresh etc':True, 'Use second screen':scrn, 'Fullscreen (timing errors if not)': fullscrn, 'Screen refresh rate': refreshRate }
         OK = gui.DlgFromDict(dictionary=infoFirst,
@@ -126,7 +130,6 @@ if askUserAndConfirmExpParams:
         dlgLabelsOrdered.append('randomSpace')
     myDlg.addField('Trials per condition (default=' + str(trialsPerCondition) + '):', trialsPerCondition, tip=str(trialsPerCondition))
     dlgLabelsOrdered.append('trialsPerCondition')
-    pctCompletedBreak = 50
     myDlg.addText(refreshMsg1, color='Black')
     if refreshRateWrong:
         myDlg.addText(refreshMsg2, color='Red')
@@ -140,17 +143,17 @@ if askUserAndConfirmExpParams:
     myDlg.show()
     if myDlg.OK: #unpack information from dialogue box
        thisInfo = myDlg.data #this will be a list of data returned from each field added in order
+       name=thisInfo[dlgLabelsOrdered.index('subject')]
+       if len(name) > 0: #if entered something
+         subject = name #change subject default name to what user entered
+       trialsPerCondition = int( thisInfo[ dlgLabelsOrdered.index('trialsPerCondition') ] ) #convert string to integer
+       print('trialsPerCondition=',trialsPerCondition)
+       logging.info('trialsPerCondition ='+str(trialsPerCondition))
        if autopilot:
-           name=thisInfo[dlgLabelsOrdered.index('subject')]
-           if len(name) > 0: #if entered something
-             subject = name #change subject default name to what user entered
-           trialsPerCondition = int( thisInfo[ dlgLabelsOrdered.index('trialsPerCondition') ] ) #convert string to integer
            autoSpace = thisInfo[dlgLabelsOrdered.index('autoPilotSpace')]
            autoTime = thisInfo[dlgLabelsOrdered.index('autoPilotTime')]
            randomTime = thisInfo[dlgLabelsOrdered.index('randomTime')]
            randomSpace = thisInfo[dlgLabelsOrdered.index('randomSpace')]
-           print('trialsPerCondition=',trialsPerCondition)
-           logging.info('trialsPerCondition ='+str(trialsPerCondition))
 else:
        print('User cancelled from dialog box.'); logging.info('User cancelled from dialog box')
        logging.flush()
@@ -205,46 +208,35 @@ logging.info('linearizeMethod='+str(mon.getLinearizeMethod()))
 ############################################################################
 
 def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, trialObjects):
+    #n: the frame
+    #trialObjects:  List of stimuli to display
+    #cuePos: cue serial temporal position
+    #cueFrames: Number of frames to display the cue
+    #itemFrames: Number of frames to display the item
+    #SOAFrames: Stimulus Onset Asynchrony in frames
     cueFrame = cuePos * SOAFrames
     cueMax = cueFrame + cueFrames
     showIdx = int(np.floor(n/SOAFrames))
-
-    #objectIdxs = [i for i in range(len(trialObjects))]
-    #objectIdxs.append(len(trialObjects)-1) #AWFUL hack
-    #print(objectIdxs[showIdx])
-    #floored quotient
     obj = trialObjects[showIdx]
-
     drawObject = n%SOAFrames < itemFrames
     if drawObject:
-        myWin.color = bgColor
         if n >= cueFrame and n < cueMax:
-            #print('cueFrames! n is', n,'. cueFrame is ,', cueFrame, 'cueFrame + cueFrames is ', (cueFrame + cueFrames))
-            #if n%2 == 0: #This should make it flash, but it might be too fast
-                #print('cue flash')
-            #myWin.color = (0,0,0)
             obj.draw()
             cue.draw()
         else:
             obj.draw()
     return True
-    #objects: Stimuli to display or
-    #cue: cue stimulus or stimuli
-    #timing parameters: Could be item duration, soa and isi. i.e. if SOA+Duration % n == 0: stimulus.setColor(stimulusColor)
-    #bgColor and stimulusColor: if displaying and hiding stimuli, i.e. for RSVP
-    #movementVector: direction and distance of movement if moving stimuli
+
 
 def oneTrial(stimuli):
     dotOrder = np.arange(len(stimuli))
     np.random.shuffle(dotOrder)
-    print(dotOrder)
     shuffledStimuli = [stimuli[i] for i in dotOrder]
     ts = []
     myWin.flip(); myWin.flip() #Make sure raster at top of screen (unless not in blocking mode), and give CPU a chance to finish other tasks
     t0 = trialClock.getTime()
     for n in range(trialFrames):
         fixation.draw()
-        #print(n//SOAFrames)
         oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, shuffledStimuli)
         myWin.flip()
         ts.append(trialClock.getTime() - t0)
@@ -266,7 +258,6 @@ def getResponse(trialStimuli):
             itemSpatial = itemSpatial - 23
         #Once we have temporal pos of selected item relative to start of the trial
         #Need to get the serial spatial pos of this item, so that we can select items around it based on the autoSpace offset
-        #print('itemSpatial is: ', itemSpatial)
         selectionTemporal = trialStimuli.index(stimuli[itemSpatial]) #This seems redundant, but it tests that the item we've selected in space is the cued item in time. if the temporal and spatial offsets are 0, it should be the same as cuePos.
         accuracy = cuePos == selectionTemporal
         mousePos = (stimuli[itemSpatial].pos[0],stimuli[itemSpatial].pos[1])
@@ -285,6 +276,9 @@ def getResponse(trialStimuli):
         while not responded:
             for item in trialStimuli:
                 item.draw()
+            instruction.draw()
+            if drawProgress: #Draw progress message
+                progress.draw()
             myWin.flip()
             button = myMouse.getPressed()
             mousePos = myMouse.getPos()
@@ -294,9 +288,10 @@ def getResponse(trialStimuli):
                 responded = True
                 print('getResponse mousePos:',mousePos)
             elif len(escapeKey)>0:
-                if escapeKey[0] == 'space' or escapeKey[0] == 'ESCAPE':
+                if escapeKey[0] == 'space':
                     expStop = True
                     responded = True
+                    return False, np.random.choice(trialStimuli), expStop, (0,0)
         clickDistances = []
         for item in trialStimuli:
             x = mousePos[0] - item.pos[0]
@@ -359,53 +354,32 @@ def checkTiming(ts):
         print(numCasesInterframeLong,'frames of', trialFrames,'were longer than',str(1000/refreshRate*(1.0+frameTimeTolerance)))
     return numCasesInterframeLong
 
-def getSpatialIdxFromCoord(Coord):
-    x = Coord[0]
-    y = Coord[1]
-    spacing = (2*pi)/nDots
-    if x ==0 and y>0:
-        SpatialIdx = 1
-    elif x == 0 and y < 0:
-        SpatialIdx = 1 + (nDots/2)
-    elif x > 0 and y == 0:
-        SpatialIdx = 1 + (3*nDots/4)
-    elif x<0 and y == 0:
-        SpatialIdx = 1 + (nDots/4)
-    else:
-        angle = atan2(y,x)
-        if angle < 0:
-            angle = (2*pi) + angle
-        posRelativeToPositiveXAxis = round(angle/spacing)
-        if posRelativeToPositiveXAxis <=(nDots/4 - 1):
-            SpatialIdx = posRelativeToPositiveXAxis + 19
-        elif posRelativeToPositiveXAxis > (nDots/4 -1):
-            SpatialIdx = posRelativeToPositiveXAxis - 4
-    return SpatialIdx
 
-
-##Set up stimuli
-stimulus = visual.Circle(myWin, radius = .2, fillColor = (1,1,1) )
-nDots = 24
-
-radius = 4
-center = (0,0)
-sameEachTime = True
-    #(nDots, radius, center, stimulusObject, sameEachTime = True)
-stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
-#print(stimuli)
-#print('length of stimuli object', len(stimuli))
 
 ######Create visual objects, noise masks, response prompts etc. ###########
 ######Draw your stimuli here if they don't change across trials, but other parameters do (like timing or distance)
 ######If you want to automate your stimuli. Do it in a function below and save clutter.
 ######For instance, maybe you want random pairs of letters. Write a function!
 ###########################################################################
-
 fixSize = .1
 fixation= visual.Circle(myWin, radius = fixSize , fillColor = (1,1,1), units=units)
 
 cue = visual.Circle(myWin, radius = radius + 2, fillColor = None, lineColor = (1,1,1), units = units)
 
+instruction = visual.TextStim(myWin,pos=(0, -(radius+.5)),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=.75,units=units)
+instructionText = 'Click the dot that was on screen with the cue.'
+instruction.text = instructionText
+
+progress = visual.TextStim(myWin,pos=(0, -(radius+1.5)),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=.75,units=units)
+
+##Set up stimuli
+stimulus = visual.Circle(myWin, radius = .2, fillColor = (1,1,1) )
+nDots = 24
+
+radius = 4 #circle radius
+center = (0,0) #circle centre
+sameEachTime = True #same item each position?
+stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
 
 ###Trial timing parameters
 SOAMS = 66.667
@@ -427,7 +401,9 @@ print('refreshRate =', refreshRate)
 print('cueMS from frames =', cueFrames*(1000./refreshRate))
 print('num of SOAs in the trial:', trialFrames/SOAFrames)
 
-##Factorial design
+###############
+## Factorial design ###
+###############
 numResponsesPerTrial = 1 #default. Used to create headers for dataFile
 stimList = []
 #cuePositions = [dot for dot in range(nDots) if dot not in [0,nDots-1]]
@@ -440,7 +416,6 @@ for cuePos in cuePositions:
     stimList.append({'cuePos':cuePos})
 
 trials = data.TrialHandler(stimList, nReps = trialsPerCondition)
-#print(trials)
 
 
 ####Create output file###
@@ -488,11 +463,10 @@ for pos in range(nDots):
 #Headers done. Do a new line
 print('longFrames',file=dataFile)
 
-
-
 expStop = False
+drawProgress = False #draw the progress message?
 
-trialNum=0; numTrialsCorrect=0; expStop=False; framesSaved=0;
+trialNum=0; numTrialsCorrect=0;  framesSaved=0;
 print('Starting experiment of',trials.nTotal,'trials. Current trial is trial ',trialNum)
 #NextRemindCountText.setText( str(trialNum) + ' of ' + str(trials.nTotal)     )
 #NextRemindCountText.draw()
@@ -501,13 +475,19 @@ myWin.flip()
 trialClock = core.Clock()
 stimClock = core.Clock()
 
-
 if eyeTracking:
     if getEyeTrackingFileFromEyetrackingMachineAtEndOfExperiment:
         eyeMoveFile=('EyeTrack_'+subject+'_'+timeAndDateStr+'.EDF')
     tracker=Tracker_EyeLink(myWin,trialClock,subject,1, 'HV5',(255,255,255),(0,0,0),False,(widthPix,heightPix))
 
 while trialNum < trials.nTotal and expStop==False:
+    if trials.nTotal > 100 and trialNum > 0:
+        if(float(trialNum)/trials.nTotal)%.25 == 0:
+            print('setting progress text')
+            progress.text = 'You have completed ' + str(trialNum) + ' of ' + str(trials.nTotal) + ' trials.'
+            drawProgress = True
+        else:
+            drawProgress = False
     fixation.draw()
     myWin.flip()
     if not autopilot:
@@ -518,32 +498,28 @@ while trialNum < trials.nTotal and expStop==False:
 #    print(cuePos)
     print("Doing trialNum",trialNum)
     trialDone, trialStimuli, trialStimuliOrder, ts = oneTrial(stimuli)
+
     #Shift positions so that the list starts at 1, which is positioned at (0,radius), and increases clockwise. This is what the MM code expects
     MMPositions = list() #Mixture modelling positions
     for dotPos in trialStimuliOrder:
-        if dotPos < (nDots/4 - 1): #Because python indexes start at 0, 5 is the 6th pos.
-            MMPositions.append(dotPos + 20)
-        elif dotPos >= (nDots/4 -1):
-            MMPositions.append(dotPos -4)
-    print('MMPositions length is', len(MMPositions))
-    print('MMPositions...')
-    print('\t', MMPositions)
+        if dotPos < (nDots/4):
+            MMPositions.append(dotPos + 19)
+        elif dotPos >= (nDots/4):
+            MMPositions.append(dotPos -5)
     nBlips = checkTiming(ts)
-#    print(trialStimuliOrder)
+
     if trialDone:
         accuracy, response, expStop, clickPos = getResponse(trialStimuli)
         responseCoord = response.pos.tolist()
-        spatialRelativeToXAxis = [item.pos.tolist() for item in stimuli]
-        print('spatialRelativeToXAxis', spatialRelativeToXAxis)
+        spatialCoords= [item.pos.tolist() for item in stimuli]
         try:
-            responseSpatialRelativeToXAxis  = spatialRelativeToXAxis.index(responseCoord)
+            responseSpatialRelativeToXAxis  = spatialCoords.index(responseCoord)
         except ValueError:
             print('coord not in list')
-        if responseSpatialRelativeToXAxis < (nDots/4-1):
-            responseSpatial = responseSpatialRelativeToXAxis + 20
-        elif responseSpatialRelativeToXAxis >= (nDots/4-1):
-            responseSpatial = responseSpatialRelativeToXAxis - 4
-        print(responseCoord)
+        if responseSpatialRelativeToXAxis < (nDots/4):
+            responseSpatial = responseSpatialRelativeToXAxis + 19
+        elif responseSpatialRelativeToXAxis >= (nDots/4):
+            responseSpatial = responseSpatialRelativeToXAxis - 5
         trialPositions = [item.pos.tolist() for item in trialStimuli]
         responseTemporal = trialPositions.index(responseCoord)
 #        print('trial positions in sequence:',trialPositions)
@@ -552,11 +528,9 @@ while trialNum < trials.nTotal and expStop==False:
 
         correctSpatial = trialStimuli[cuePos].pos
         correctTemporal = cuePos
-        print(correctSpatial)
-        print(correctTemporal)
         print(subject,'\t',
         'dot-jump','\t',
-        'False','\t',
+        False,'\t',
         trialNum,'\t',
         responseSpatial,'\t',
         responseCoord[0],'\t',
@@ -577,4 +551,5 @@ while trialNum < trials.nTotal and expStop==False:
         trialNum += 1
         dataFile.flush()
 if expStop:
+    print('Participant cancelled experiment on trial', trialNum)
     dataFile.flush()
