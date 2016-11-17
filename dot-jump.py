@@ -361,23 +361,41 @@ def checkTiming(ts):
 ######If you want to automate your stimuli. Do it in a function below and save clutter.
 ######For instance, maybe you want random pairs of letters. Write a function!
 ###########################################################################
+#Calculate size of stimuli in original experiment
+OGWidth = 1024
+OGHeight = 768
+OGDiag = sqrt(OGWidth**2 + OGHeight**2)
+OGDiagInch = 17
+OGDiagCM = OGDiagInch * 2.54
+OGpixelPerDegree = OGDiag/((atan(OGDiagCM/57.))*(180/np.pi))
+print('OGPPD', OGpixelPerDegree)
+
+
+
+radiusPix = 200
+radius = radiusPix/OGpixelPerDegree #circle radius
+center = (0,0) #circle centre
+
+
 fixSize = .1
 fixation= visual.Circle(myWin, radius = fixSize , fillColor = (1,1,1), units=units)
 
-cue = visual.Circle(myWin, radius = radius + 2, fillColor = None, lineColor = (1,1,1), units = units)
+cueRadiusPix = 360
+cueRadiusDeg = cueRadiusPix/OGpixelPerDegree 
+cue = visual.Circle(myWin, radius = cueRadiusDeg, fillColor = None, lineColor = (1,1,1), units = units)
 
-instruction = visual.TextStim(myWin,pos=(0, -(radius+.5)),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=.75,units=units)
+instruction = visual.TextStim(myWin,pos=(0, -(radius+1)),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=.75,units=units)
 instructionText = 'Click the dot that was on screen with the cue.'
 instruction.text = instructionText
 
 progress = visual.TextStim(myWin,pos=(0, -(radius+1.5)),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=.75,units=units)
 
 ##Set up stimuli
-stimulus = visual.Circle(myWin, radius = .2, fillColor = (1,1,1) )
+stimulusSizePix = 20.
+stimulusSizeDeg = stimulusSizePix/OGpixelPerDegree 
+stimulus = visual.Circle(myWin, radius = stimulusSizeDeg, fillColor = (1,1,1) )
 nDots = 24
 
-radius = 4 #circle radius
-center = (0,0) #circle centre
 sameEachTime = True #same item each position?
 stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
 
@@ -481,8 +499,9 @@ if eyeTracking:
     tracker=Tracker_EyeLink(myWin,trialClock,subject,1, 'HV5',(255,255,255),(0,0,0),False,(widthPix,heightPix))
 
 while trialNum < trials.nTotal and expStop==False:
-    if trials.nTotal > 100 and trialNum > 0:
-        if(float(trialNum)/trials.nTotal)%.25 == 0:
+    print(float(trialNum)/trials.nTotal)
+    if trials.nTotal > 0 and trialNum > 0:
+        if(float(trialNum)/trials.nTotal)%.2 == 0:
             print('setting progress text')
             progress.text = 'You have completed ' + str(trialNum) + ' of ' + str(trials.nTotal) + ' trials.'
             drawProgress = True
