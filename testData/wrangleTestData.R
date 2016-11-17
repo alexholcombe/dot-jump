@@ -11,7 +11,9 @@
 rm(list = ls())
 setwd('~/gitCode/dot-jump/')
 
-testData <- read.table('testData/charliefixedcue.txt',sep='\t', stringsAsFactors = F, header = T)
+testData <- read.table('testData/CharlieCircleCue.txt',sep='\t', stringsAsFactors = F, header = T)
+
+groupName = 'Charlie'
 
 #clean up the accuracy column
 testData$accuracy <- gsub(pattern = ' ',replacement = '',x = testData$accuracy)
@@ -28,15 +30,12 @@ responseSpatial <- c()
 correctSpatial <- c()
 
 for(row in 1:nrow(testData)){
-  print(paste(responseX, responseY, angle, thisResponseSpatial))
-  responseSpatial <- c(responseSpatial, thisResponseSpatial)
   correctSpatial <- c(correctSpatial,
                       testData[row, 'position10']
                       )
 }
 
 #add this information to the data
-testData$responseSpatial <- responseSpatial
 testData$correctSpatial <- correctSpatial
 
 #Within a single row, the original data has this format:
@@ -49,7 +48,7 @@ testData$correctSpatial <- correctSpatial
 positionCols <- paste0('position', 0:23)
 
 #column ordering for matlab
-expectedFormat <- testData[,c('correctSpatial','responseSpatial', 'correctPosInStream','responsePosInStream',positionCols)]
+expectedFormat <- testData[,c('correctSpatial','responseSpatialPos', 'correctPosInStream','responsePosInStream',positionCols)]
 
 
 #Shift the positions to match the matlab code's expectations (I'll change this in the experiment code eventually)
@@ -62,6 +61,5 @@ for(col in 1:ncol(expectedFormat)){
   expectedFormat[,col] <- temp
 }
 
-colnames(expectedFormat) <- c('T1-P','T1-repP', 'T1-T','T1-repT', rep(NULL, times=24))
 
-write.table(x = expectedFormat, file = 'testData/Charlie/Charlie1.txt', sep='\t',row.names = F, col.names = F)
+write.table(x = expectedFormat, file = paste0('testData/',groupName,'/', groupName,'1.txt'), sep='\t',row.names = F, col.names = F)
