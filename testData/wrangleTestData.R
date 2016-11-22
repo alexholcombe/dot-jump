@@ -11,9 +11,11 @@
 rm(list = ls())
 setwd('~/gitCode/dot-jump/')
 
-testData <- read.table('testData/CharlieCircleCue.txt',sep='\t', stringsAsFactors = F, header = T)
+testData <- read.table('testData/KRL.txt',sep='\t', stringsAsFactors = F, header = T)
 
-groupName = 'Charlie'
+testData <- testData[-(1:10),]
+
+groupName = 'Kim'
 
 #clean up the accuracy column
 testData$accuracy <- gsub(pattern = ' ',replacement = '',x = testData$accuracy)
@@ -62,4 +64,4 @@ for(col in 1:ncol(expectedFormat)){
 }
 
 
-write.table(x = expectedFormat, file = paste0('testData/',groupName,'/', groupName,'1.txt'), sep='\t',row.names = F, col.names = F)
+write.table(x = expectedFormat, file = paste0('testData/',groupName,'/', groupName,'Letter','1.txt'), sep='\t',row.names = F, col.names = F)
