@@ -6,6 +6,7 @@ import numpy as np
 import psychopy, psychopy.info
 import copy
 from psychopy import visual, sound, monitors, logging, gui, event, core, data
+from string import ascii_uppercase
 try:
     from helpersAOH import accelerateComputer, openMyStimWindow
 except Exception as e:
@@ -39,12 +40,13 @@ waitBlank=False
 refreshRate= 85 *1.0;  #160 #set to the framerate of the monitor
 fullscrn=True; #show in small window (0) or full screen (1)
 scrn=True
+stimulusType = 'circle'
 
 
 if True: #just so I can indent all the below
 #which screen to display the stimuli. 0 is home screen, 1 is second screen
         # create a dialog from dictionary
-        infoFirst = { 'Autopilot':autopilot, 'Check refresh etc':True, 'Use second screen':scrn, 'Fullscreen (timing errors if not)': fullscrn, 'Screen refresh rate': refreshRate }
+        infoFirst = { 'Autopilot':autopilot, 'Check refresh etc':True, 'Use second screen':scrn, 'Fullscreen (timing errors if not)': fullscrn, 'Screen refresh rate': refreshRate, 'Stimulus type': stimulusType}
         OK = gui.DlgFromDict(dictionary=infoFirst,
             title='MOT',
             order=['Autopilot','Check refresh etc', 'Use second screen', 'Screen refresh rate', 'Fullscreen (timing errors if not)'],
@@ -59,11 +61,12 @@ if True: #just so I can indent all the below
         print('scrn = ',scrn, ' from dialog box')
         fullscrn = infoFirst['Fullscreen (timing errors if not)']
         refreshRate = infoFirst['Screen refresh rate']
+        stimulusType = infoFirst['Stimulus type']
 
         #monitor parameters
-        widthPix = 1280 #1440  #monitor width in pixels
-        heightPix =1024  #900 #monitor height in pixels
-        monitorwidth = 40.5 #28.5 #monitor width in centimeters
+        widthPix = 1024 #1440  #monitor width in pixels
+        heightPix =768  #900 #monitor height in pixels
+        monitorwidth = 37 #28.5 #monitor width in centimeters
         viewdist = 55.; #cm
         pixelperdegree = widthPix/ (atan(monitorwidth/viewdist) /np.pi*180)
         bgColor = [-1,-1,-1] #black background
@@ -288,7 +291,7 @@ def getResponse(trialStimuli):
                 responded = True
                 print('getResponse mousePos:',mousePos)
             elif len(escapeKey)>0:
-                if escapeKey[0] == 'space':
+                if escapeKey[0] == 'q':
                     expStop = True
                     responded = True
                     return False, np.random.choice(trialStimuli), expStop, (0,0)
@@ -381,23 +384,31 @@ fixSize = .1
 fixation= visual.Circle(myWin, radius = fixSize , fillColor = (1,1,1), units=units)
 
 cueRadiusPix = 360
-cueRadiusDeg = cueRadiusPix/OGpixelPerDegree 
+cueRadiusDeg = cueRadiusPix/OGpixelPerDegree
 cue = visual.Circle(myWin, radius = cueRadiusDeg, fillColor = None, lineColor = (1,1,1), units = units)
 
 instruction = visual.TextStim(myWin,pos=(0, -(radius+1)),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=.75,units=units)
 instructionText = 'Click the dot that was on screen with the cue.'
 instruction.text = instructionText
 
-progress = visual.TextStim(myWin,pos=(0, -(radius+1.5)),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=.75,units=units)
+progress = visual.TextStim(myWin,pos=(0, -(radius+2.5)),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=.75,units=units)
 
 ##Set up stimuli
 stimulusSizePix = 20.
-stimulusSizeDeg = stimulusSizePix/OGpixelPerDegree 
+stimulusSizeDeg = stimulusSizePix/OGpixelPerDegree
 stimulus = visual.Circle(myWin, radius = stimulusSizeDeg, fillColor = (1,1,1) )
 nDots = 24
 
 sameEachTime = True #same item each position?
-stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
+if stimulusType=='circle':
+    stimulus = visual.Circle(myWin, radius = stimulusSizeDeg, units = units, fillColor = (1,1,1) )
+    stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
+    stimForDataFile = 'circle'
+if stimulusType=='letter':
+    letter = np.random.choice([i for i in ascii_uppercase], size = 1)[0]
+    stimulus = visual.TextStim(myWin, text = letter, font ='Sloan', height = stimulusSizeDeg*2, units = units,  color = (1,1,1), alignHoriz='center', alignVert='center' )
+    stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
+    stimForDataFile = letter
 
 ###Trial timing parameters
 SOAMS = 66.667
@@ -446,7 +457,13 @@ oneOffHeaders = [
     'subject',
     'task',
     'staircase',
-    'trialNum'
+    'trialNum',
+    'stimulus',
+    'monitorWidth',
+    'monitorHeight',
+    'stimHeight ',
+    'ISI',
+    'SOA'
 ]
 
 for header in oneOffHeaders:
@@ -550,7 +567,13 @@ while trialNum < trials.nTotal and expStop==False:
         print(subject,'\t',
         'dot-jump','\t',
         False,'\t',
-        trialNum,'\t',
+        trialNum,'\t',    
+        stimForDataFile,'\t',
+        widthPix,'\t',
+        heightPix,'\t',
+        stimulusSizeDeg*2,'\t',
+        ISIMS,'\t',
+        SOAMS,'\t',
         responseSpatial,'\t',
         responseCoord[0],'\t',
         responseCoord[1],'\t',
