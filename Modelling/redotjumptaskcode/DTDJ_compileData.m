@@ -3,7 +3,7 @@
 
 clear all; %#ok<CLSCR>
 
-allGroups = {'Charlie'};
+allGroups = {'Pilot'};
 dataDirectory = '~/gitCode/dot-jump/testData/';
 saveDirectory = '~/gitCode/dot-jump/testData/modelOutput/';
 
@@ -38,7 +38,7 @@ dataColumns = [3 1 4 2; ...
 % zeros. So make sure this is definitely higher than the actual maximum
 % number of trials.
 
-nTrialsMaxEstimate = 250;
+nTrialsMaxEstimate = 200;
 
 % Calculate the number of groups.
 nGroups = numel(allGroups);
@@ -69,7 +69,7 @@ for thisGroup = 1:nGroups
     for thisFile = 1:nTotalFiles
 
         thisFileName = allFiles{thisFile};
-        allParticipants{thisFile} = thisFileName(1:9);
+        allParticipants{thisFile} = thisFileName(1:6);
 
     end
 
@@ -100,7 +100,7 @@ for thisGroup = 1:nGroups
         fprintf('\nParticipant %2d (%s)...', thisParticipant, participantID{:});
 
         % Find the relevant files
-        theseFiles = find(strncmp(allFiles,participantID,4));
+        theseFiles = find(strncmp(allFiles,participantID,6));
         nFiles = numel(theseFiles);
 
         startTrial = 1; % Location in the data matrix to start entering data

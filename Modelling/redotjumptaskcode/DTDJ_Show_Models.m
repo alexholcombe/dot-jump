@@ -28,11 +28,11 @@ thisPath = '~/gitCode/dot-jump/testData/';
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'Charlie'};
+sampleNames = {'Pilot'};
 
 % Provide some properties of the data for each sample, in order.
 allRates = [15];               % Item rate (items/sec)
-allNParticipants = [1];       % Number of participants
+allNParticipants = [2];       % Number of participants
 allNConditions = [1];
 nConditions = 1;
 

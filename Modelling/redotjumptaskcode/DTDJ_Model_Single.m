@@ -38,15 +38,15 @@ addpath(genpath('~/gitCode/dot-jump/Modelling/redotjumptaskcode/'))
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'Charlie'};
+sampleNames = {'Pilot'};
 
 % Provide some properties of the data for each sample, in order
-allNParticipants = [1];         % Number of participants
+allNParticipants = [2];         % Number of participants
 allNPositions = [24];            % Number of items in a stream on each trial
 allNConditions = [1];             % Number of conditions
 
 % Set some model-fitting parameters.
-nReplicates = 1000;                          % Number of times to repeat each fit with different starting values
+nReplicates = 100;                          % Number of times to repeat each fit with different starting values
 smallNonZeroNumber = 10^-5;                 % Useful number for when limits can't be exactly zero but can be anything larger
 fitMaxIter = 10^4;                          % Maximum number of fit iterations
 fitMaxFunEvals = 10^4;                      % Maximum number of model evaluations
@@ -123,7 +123,7 @@ for thisSample = 1:nSamples
     end
     
     % Set fit options.
-    options = statset('MaxIter', fitMaxIter, 'MaxFunEvals', fitMaxFunEvals, 'Display', 'iter');
+    options = statset('MaxIter', fitMaxIter, 'MaxFunEvals', fitMaxFunEvals, 'Display', 'off');
 
     % Cycle through each participant.
     for thisParticipant = 1:nParticipants
@@ -178,7 +178,7 @@ for thisSample = 1:nSamples
         % the range dictated by the bounds.
 
         for thisReplicate = 1:nReplicates
-
+            fprintf('\n This replicate = %d', thisReplicate);
             % Randomise starting values for each parameter.
             pGuess = max([smallNonZeroNumber rand]);
             muGuess_x = (2*muBound_x*rand)-muBound_x;
