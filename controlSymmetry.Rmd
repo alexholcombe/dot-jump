@@ -1,0 +1,31 @@
+---
+output: html_document
+---
+
+```{r}
+rm(list=ls())
+library(ggplot2)
+
+files <- list.files('Modelling/DotJump_Data_And_Modeling/DataFiles/Controls/')
+
+objs <- c()
+
+for(file in files){
+  objName <- unlist(strsplit(file, '\\.'))[1]
+  objs <- c(objs, objName)
+  assign(objName, read.table(paste0('Modelling/DotJump_Data_And_Modeling/DataFiles/Controls/',file), sep='\t', header=F))
+}
+
+tempErrors <- data.frame(error = numeric(200*length(objs)), participant=character(200*length(objs)), stringsAsFactors = F)
+
+for(obj in objs){
+  x <- get(obj)
+  endRow <- 200*(which(objs==obj))
+  startRow <- endRow-199
+  tempErrorParticipant <- x[,3]-x[,4]
+  tempErrors$participant[startRow:endRow] <- obj
+  tempErrors$error[startRow:endRow] <- tempErrorParticipant
+}
+
+ggplot(tempErrors, aes(x=error))+geom_histogram(binwidth = 1) + facet_wrap(~participant)
+```
