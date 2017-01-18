@@ -77,7 +77,7 @@ if True: #just so I can indent all the below
         myWin = openMyStimWindow(mon,widthPix,heightPix,bgColor,allowGUI,units,fullscrn,scrn,waitBlank)
         myWin.setRecordFrameIntervals(False)
 
-        trialsPerCondition = 2 #default value
+        trialsPerCondition = 1 #default value
 
         refreshMsg2 = ''
         if not checkRefreshEtc:
@@ -436,7 +436,7 @@ print('num of SOAs in the trial:', trialFrames/SOAFrames)
 numResponsesPerTrial = 1 #default. Used to create headers for dataFile
 stimList = []
 #cuePositions = [dot for dot in range(nDots) if dot not in [0,nDots-1]]
-cuePositions = [10]
+cuePositions = [pos for pos in range(8,17)]
 print('cuePositions: ',cuePositions)
 #cuePositions = cuePositions[2:(nDots-3)] #drop the first and final two dots
 #Set up the factorial design (list of all conditions)
@@ -444,7 +444,7 @@ print('cuePositions: ',cuePositions)
 for cuePos in cuePositions:
     stimList.append({'cuePos':cuePos})
 
-trials = data.TrialHandler(stimList, nReps = trialsPerCondition)
+trials = data.TrialHandler(stimList, nReps = trialsPerCondition) #trialsPerCondition on line 80 so that it's in the setup dialogue box. Change it there to change dialogue box default. 
 
 
 ####Create output file###
