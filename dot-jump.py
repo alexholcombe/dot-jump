@@ -479,7 +479,6 @@ duplicatedHeaders = [
     'clickX',
     'clickY',
     'accuracy',
-    'cuePos',
     'responsePosInStream',
     'correctPosInStream'
 ]
@@ -583,7 +582,6 @@ while trialNum < trials.nTotal and expStop==False:
         clickPos[0],'\t',
         clickPos[1],'\t',
         accuracy,'\t',
-        cuePos, '\t',
         responseTemporal,'\t',
         correctTemporal,'\t',
         end='',
