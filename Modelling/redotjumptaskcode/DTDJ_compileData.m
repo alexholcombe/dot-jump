@@ -12,7 +12,7 @@ saveDirectory = '~/gitCode/dot-jump/testData/modelOutput/';
 
 dataFormats = '%d%d%d%d';
 nPositions = 24;
-possTimeErrors = -10:13; % Possible time errors
+possTimeErrors = -18:15; % Possible time errors
 possPositionErrors = -11:12; % Possible position errors
 
 for thisPosition = 1:nPositions

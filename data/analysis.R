@@ -15,7 +15,7 @@ types <- lapply(read.table(dataFiles[1], sep='\t', header=T, stringsAsFactors = 
 fullData <- data.frame(matrix(NA, nrow=nLines, ncol=length(types)))
 for(col in 1:length(types)){
   if(types[col][[1]]!='factor'){
-    fullData[,col] <- as.vector(fullData[,col], mode = types[col][[1]])a
+    fullData[,col] <- as.vector(fullData[,col], mode = types[col][[1]])
   }
 }
 colnames(fullData) <- colnames(read.table(dataFiles[1], sep='\t', header=T))
@@ -34,3 +34,36 @@ fullData$error <- fullData$responsePosInStream - fullData$correctPosInStream
 ggplot(fullData, aes(x=error))+
   geom_histogram(binwidth=1)+
   facet_wrap(~subject)
+
+
+numPositions <- 24
+
+#spacing of those positions
+spacing <- (2*pi)/numPositions
+
+#Left out cuePos from experiment dataFile, this recovers it
+fullData$correctSpatial <- NA
+for(row in 1:nrow(fullData)){
+  fullData$correctSpatial[row] <- fullData[row, paste0('position', fullData$correctPosInStream[row])]
+}
+
+positionCols <- paste0('position', 0:23)
+
+#column ordering for matlab
+expectedFormat <- fullData[,c('subject', 'correctSpatial','responseSpatialPos', 'correctPosInStream','responsePosInStream',positionCols)]
+
+
+#Shift the positions to match the matlab code's expectations (I'll change this in the experiment code eventually)
+for(col in 2:ncol(expectedFormat)){
+  temp <- expectedFormat[,col] #Sometimes there are weird formatting errors. Doubles or floats that the MM code can't deal with. So select every collumn and make it an int vector
+  if(col %in% c(4,5)){ #If it's a time column
+    temp <- temp + 1
+  }
+  temp <- as.integer(temp)
+  expectedFormat[,col] <- temp
+}
+
+for(ID in unique(expectedFormat$subject)){
+  temp <- expectedFormat[expectedFormat$subject==ID,-1]
+  write.csv(temp, paste0('variableCue',ID,'.csv'))
+}

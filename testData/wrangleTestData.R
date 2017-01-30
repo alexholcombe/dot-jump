@@ -9,7 +9,7 @@
 ### T1-repP: temporal position of response
 ### then 24 cells, each representing an item in the stream. The serial position of the cell represents the temporal position of the item
 rm(list = ls())
-setwd('~/gitCode/dot-jump/testData/')
+setwd('~/gitCode/dot-jump/data/')
 
 
 
