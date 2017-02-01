@@ -3,8 +3,8 @@
 
 clear all; %#ok<CLSCR>
 
-allGroups = {'Pilot'};
-dataDirectory = '~/gitCode/dot-jump/testData/';
+allGroups = {'variableCue'};
+dataDirectory = '~/gitCode/dot-jump/data/wrangled/';
 saveDirectory = '~/gitCode/dot-jump/testData/modelOutput/';
 
 
@@ -12,7 +12,7 @@ saveDirectory = '~/gitCode/dot-jump/testData/modelOutput/';
 
 dataFormats = '%d%d%d%d';
 nPositions = 24;
-possTimeErrors = -18:15; % Possible time errors
+possTimeErrors = -10:13; % Possible time errors
 possPositionErrors = -11:12; % Possible position errors
 
 for thisPosition = 1:nPositions
@@ -190,6 +190,6 @@ for thisGroup = 1:nGroups
     % Save and end
     cd(saveDirectory);
     fileName = ['CompiledData_DTDJ_' allGroups{thisGroup}];
-    save(fileName,'allT1Time','allT1Position','allT1ResponseTime','allT1ResponsePosition','allT1ErrorTime','allT1ErrorPosition','allT1ErrorMatrix','allT1ErrorCombinations');
+    %save(fileName,'allT1Time','allT1Position','allT1ResponseTime','allT1ResponsePosition','allT1ErrorTime','allT1ErrorPosition','allT1ErrorMatrix','allT1ErrorCombinations');
 
 end

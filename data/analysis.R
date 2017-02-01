@@ -8,7 +8,7 @@ dataFiles <- list.files(pattern='.txt')
 
 nLines <- 0
 for(rawFile in dataFiles){
-  nLines <- nLines + length(readLines(rawFile))-1
+  if(!(readLines(rawFile)-1)<250) nLines <- nLines+readLines(rawFile)-1
 }
 
 types <- lapply(read.table(dataFiles[1], sep='\t', header=T, stringsAsFactors = F), class)
@@ -20,11 +20,20 @@ for(col in 1:length(types)){
 }
 colnames(fullData) <- colnames(read.table(dataFiles[1], sep='\t', header=T))
 
+abortedPracticeAttempts <- c()
+
 startRow <- 1
 for(rawFile in dataFiles){
-  endRow <- length(readLines(rawFile))+startRow-2
-  fullData[startRow:endRow,] <- read.table(rawFile, sep='\t', header =T, stringsAsFactors = F)
-  startRow <- endRow + 1
+  temp <- read.table(rawFile, sep='\t', header =T, stringsAsFactors = F)
+  if(nrow(temp)<250) abortedPracticeAttempts <- c(abortedPracticeAttempts, rawFile)
+  else{
+    discard <- nrow(temp) - 250
+    print(paste(rawFile, discard))
+    temp <- temp[-c(1:discard),]
+    endRow <- nrow(temp)+startRow-1
+    fullData[startRow:endRow,] <- temp
+    startRow <- endRow + 1 
+  }
 }
 
 fullData$accuracy <- as.logical(gsub(' ','',fullData$accuracy))
@@ -65,5 +74,6 @@ for(col in 2:ncol(expectedFormat)){
 
 for(ID in unique(expectedFormat$subject)){
   temp <- expectedFormat[expectedFormat$subject==ID,-1]
-  write.csv(temp, paste0('variableCue',ID,'.csv'))
+  ID <- gsub(' ','',ID) #Why does python include so many extra spaces in character columns?
+  write.table(temp, paste0('variableCue',ID,'.txt'), sep='\t', row.names = F, col.names = F)
 }
