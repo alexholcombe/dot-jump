@@ -5,15 +5,17 @@ clear all; %#ok<CLSCR>
 
 allGroups = {'variableCue'};
 dataDirectory = '~/gitCode/dot-jump/data/wrangled/';
-saveDirectory = '~/gitCode/dot-jump/testData/modelOutput/';
+saveDirectory = '~/gitCode/dot-jump/data/modelOutput/';
 
 
 % Specify the format of the data in the text files.
 
 dataFormats = '%d%d%d%d';
 nPositions = 24;
-possTimeErrors = -10:13; % Possible time errors
+possTimeErrors = -18:15; % Possible time errors
 possPositionErrors = -11:12; % Possible position errors
+
+IDLength = 13 %number of characters in filenames that correspond to unique ID
 
 for thisPosition = 1:nPositions
     dataFormats = strcat(dataFormats, '%d');
@@ -69,7 +71,7 @@ for thisGroup = 1:nGroups
     for thisFile = 1:nTotalFiles
 
         thisFileName = allFiles{thisFile};
-        allParticipants{thisFile} = thisFileName(1:6);
+        allParticipants{thisFile} = thisFileName(1:IDLength);
 
     end
 
@@ -100,7 +102,7 @@ for thisGroup = 1:nGroups
         fprintf('\nParticipant %2d (%s)...', thisParticipant, participantID{:});
 
         % Find the relevant files
-        theseFiles = find(strncmp(allFiles,participantID,6));
+        theseFiles = find(strncmp(allFiles,participantID,IDLength));
         nFiles = numel(theseFiles);
 
         startTrial = 1; % Location in the data matrix to start entering data
@@ -113,7 +115,7 @@ for thisGroup = 1:nGroups
             fileID = fopen(allFiles{theseFiles(thisFile)});
 
             % Read in the data.
-            thisRead = textscan(fileID,dataFormat,'Delimiter',' \t','HeaderLines',1,'MultipleDelimsAsOne',1);
+            thisRead = textscan(fileID,dataFormat,'Delimiter',' \t','HeaderLines',0,'MultipleDelimsAsOne',1);
 
             % Set the bounds in the data matrix for data entry.
             nTrials = numel(thisRead{dataColumns(thisGroup,1)});
@@ -142,23 +144,25 @@ for thisGroup = 1:nGroups
             % possible combination of spatial/temporal errors on that
             % trial.
             allSequence = double([thisRead{5:28}]); % Sequence of positions on every trial
-            allTimeError = repmat(possTimeErrors,nTrials,1);
+            allTimeError =  repmat(1:24,nTrials,1) - repmat(double(thisRead{dataColumns(thisGroup,1)}),1,nPositions);
             allPositionErrorA = mod(allSequence - repmat(double(thisRead{dataColumns(thisGroup,4)}),1,nPositions),nPositions);
             allPositionErrorB = mod(repmat(double(thisRead{dataColumns(thisGroup,4)}),1,nPositions) - allSequence, nPositions);
             [minError,minPos] = min(cat(3,allPositionErrorA,allPositionErrorB),[],3);
             allPositionError = (3-(2*minPos)) .* minError; % Adds the appropriate sign
 
             allT1ErrorCombinations(thisParticipant,startTrial:endTrial,:,:) = cat(3,allTimeError, allPositionError);
-
+            assignin('base',sprintf('%sAllTime', participantID{:}), allTimeError)
+            assignin('base',sprintf('%sAllPos', participantID{:}), allPositionError)
             nCombinations = numel(allTimeError);
-
+            
             for thisCombination = 1:nCombinations
                 thisTimePos = find(possTimeErrors==allTimeError(thisCombination));
                 thisPosPos = find(possPositionErrors==allPositionError(thisCombination));
                 allT1ErrorMatrix(thisParticipant,thisTimePos,thisPosPos) ...
                     = allT1ErrorMatrix(thisParticipant,thisTimePos,thisPosPos) + 1;
             end
-
+            
+            assignin('base',participantID{:}, allT1ErrorMatrix(thisParticipant,:,:))
             % Close file.
             fclose(fileID);
 
@@ -190,6 +194,6 @@ for thisGroup = 1:nGroups
     % Save and end
     cd(saveDirectory);
     fileName = ['CompiledData_DTDJ_' allGroups{thisGroup}];
-    %save(fileName,'allT1Time','allT1Position','allT1ResponseTime','allT1ResponsePosition','allT1ErrorTime','allT1ErrorPosition','allT1ErrorMatrix','allT1ErrorCombinations');
+    save(fileName,'allT1Time','allT1Position','allT1ResponseTime','allT1ResponsePosition','allT1ErrorTime','allT1ErrorPosition','allT1ErrorMatrix','allT1ErrorCombinations','allParticipants');
 
 end

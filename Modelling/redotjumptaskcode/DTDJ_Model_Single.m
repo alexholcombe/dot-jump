@@ -30,7 +30,7 @@
 clear all;
 
 % Provide the path
-thisPath = '~/gitCode/dot-jump/testData/';
+thisPath = '~/gitCode/dot-jump/';
 
 % Provide the path to the PolarToIm function.
 addpath(genpath('~/Documents/MATLAB/Add-Ons/PolarRectangularConv0.1/'));
@@ -38,15 +38,15 @@ addpath(genpath('~/gitCode/dot-jump/Modelling/redotjumptaskcode/'))
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'Pilot'};
+sampleNames = {'variableCue'};
 
 % Provide some properties of the data for each sample, in order
-allNParticipants = [2];         % Number of participants
+allNParticipants = [5];         % Number of participants
 allNPositions = [24];            % Number of items in a stream on each trial
 allNConditions = [1];             % Number of conditions
 
 % Set some model-fitting parameters.
-nReplicates = 100;                          % Number of times to repeat each fit with different starting values
+nReplicates = 300;                          % Number of times to repeat each fit with different starting values
 smallNonZeroNumber = 10^-5;                 % Useful number for when limits can't be exactly zero but can be anything larger
 fitMaxIter = 10^4;                          % Maximum number of fit iterations
 fitMaxFunEvals = 10^4;                      % Maximum number of model evaluations
@@ -83,7 +83,7 @@ global theseErrorIndices;
 
 % Add folders to the MATLAB path.
 addpath(genpath(thisPath));
-cd([thisPath 'Data']);
+cd([thisPath 'data/modelOutput']);
 
 % Turn off this warning to prevent it from filling the command
 % window. This is only a problem if you get it on most
@@ -279,7 +279,7 @@ for thisSample = 1:nSamples
                 
             end
             
-            title(['Participant ' num2str(thisParticipant)]);
+            title(allParticipants{thisParticipant}(12:13));
             drawnow;
             
         end
@@ -290,7 +290,7 @@ for thisSample = 1:nSamples
     fprintf('\n\n');
 
     % Change directory to store model output.
-    cd([thisPath 'ModelOutput']);
+    %cd([thisPath 'ModelOutput']);
     
     % Save model output.
     save(['ModelOutput_DTDJ_' sampleNames{thisSample} '_Single.mat'], '-regexp', '^(?!(pFig)$).');

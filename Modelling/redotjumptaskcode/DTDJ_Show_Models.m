@@ -24,15 +24,15 @@ addpath(genpath('~/gitCode/dot-jump/Modelling/redotjumptaskcode/'))
 
 
 % Provide the path.
-thisPath = '~/gitCode/dot-jump/testData/';
+thisPath = '~/gitCode/dot-jump/data/';
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'Pilot'};
+sampleNames = {'variableCue'};
 
 % Provide some properties of the data for each sample, in order.
 allRates = [15];               % Item rate (items/sec)
-allNParticipants = [2];       % Number of participants
+allNParticipants = [5];       % Number of participants
 allNConditions = [1];
 nConditions = 1;
 
@@ -522,16 +522,16 @@ for thisSample = 1:nSamples
 end
     
 % Write the data to a *.csv file for analysis in JASP
-cd([thisPath 'CSV']);
+cd('CSV');
 writeFile = fopen('DTDJ_AllData.csv','w');  % Overwrite file
-fprintf(writeFile,'Group,'); % Header
+fprintf(writeFile,'Group,ID,'); % Header
 for thisCondition = 1:max(allNConditions)
     fprintf(writeFile,'Accuracy_C%d,Efficacy_C%d,Latency_C%d,Precision_C%d,Bias_C%d,Spread_C%d',thisCondition*ones(1,6));
 end
 
 for thisSample = 1:nSamples
     for thisParticipant = 1:allNParticipants(thisSample)
-        fprintf(writeFile,'\n%d',thisSample); % Group
+        fprintf(writeFile,'\n%d,%s',thisSample, allParticipants{thisParticipant}(12:13)); % Group
         
         for thisCondition = 1:allNConditions(thisSample)
             fprintf(writeFile,',%.4f,%.4f,%.4f,%.4f,%.4f,%.4f', allPerformance(thisSample,thisParticipant), ...
