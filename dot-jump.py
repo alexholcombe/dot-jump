@@ -64,8 +64,8 @@ if True: #just so I can indent all the below
         stimulusType = infoFirst['Stimulus type']
 
         #monitor parameters
-        widthPix = 1024 #1440  #monitor width in pixels
-        heightPix =768  #900 #monitor height in pixels
+        widthPix = 1280 #1440  #monitor width in pixels
+        heightPix =800  #900 #monitor height in pixels
         monitorwidth = 37 #28.5 #monitor width in centimeters
         viewdist = 55.; #cm
         pixelperdegree = widthPix/ (atan(monitorwidth/viewdist) /np.pi*180)
@@ -132,7 +132,9 @@ if askUserAndConfirmExpParams:
         dlgLabelsOrdered.append('autoPilotSpace')
         dlgLabelsOrdered.append('randomSpace')
     myDlg.addField('Trials per condition (default=' + str(trialsPerCondition) + '):', trialsPerCondition, tip=str(trialsPerCondition))
+    myDlg.addField('Central task', False)
     dlgLabelsOrdered.append('trialsPerCondition')
+    dlgLabelsOrdered.append('Central task')
     myDlg.addText(refreshMsg1, color='Black')
     if refreshRateWrong:
         myDlg.addText(refreshMsg2, color='Red')
@@ -151,6 +153,7 @@ if askUserAndConfirmExpParams:
          subject = name #change subject default name to what user entered
        trialsPerCondition = int( thisInfo[ dlgLabelsOrdered.index('trialsPerCondition') ] ) #convert string to integer
        print('trialsPerCondition=',trialsPerCondition)
+       centralTask = thisInfo[dlgLabelsOrdered.index('Central task')]
        logging.info('trialsPerCondition ='+str(trialsPerCondition))
        if autopilot:
            autoSpace = thisInfo[dlgLabelsOrdered.index('autoPilotSpace')]
@@ -210,7 +213,7 @@ logging.info('linearizeMethod='+str(mon.getLinearizeMethod()))
 ####Functions. Save time by automating processes like stimulus creation and ordering
 ############################################################################
 
-def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, trialObjects):
+def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, shuffledStimuli, centralStimuli,centralTask):
     #n: the frame
     #trialObjects:  List of stimuli to display
     #cuePos: cue serial temporal position
@@ -220,30 +223,44 @@ def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, trialObjects):
     cueFrame = cuePos * SOAFrames
     cueMax = cueFrame + cueFrames
     showIdx = int(np.floor(n/SOAFrames))
-    obj = trialObjects[showIdx]
+    periObj = shuffledStimuli[showIdx]
+    if centralTask:
+        centralObj = centralStimuli[showIdx]
     drawObject = n%SOAFrames < itemFrames
-    if drawObject:
+    if drawObject and not centralTask:
         if n >= cueFrame and n < cueMax:
             obj.draw()
             cue.draw()
         else:
             obj.draw()
+    elif drawObject and centralTask:
+        periObj.draw(); centralObj.draw()
     return True
 
 
-def oneTrial(stimuli):
-    dotOrder = np.arange(len(stimuli))
-    np.random.shuffle(dotOrder)
-    shuffledStimuli = [stimuli[i] for i in dotOrder]
+def oneTrial(stimuli, centralTask,randomInteger, cuePos):
+    if centralTask:
+        dotOrder = np.arange(len(stimuli[0]))
+        np.random.shuffle(dotOrder)
+        shuffledStimuli = [stimuli[0][i] for i in dotOrder]
+        centralStimuli = stimuli[1]
+        replacedText = centralStimuli[cuePos].text
+        centralStimuli[cuePos].text = str(randomInteger)
+    else:
+        dotOrder = np.arange(len(stimuli))
+        np.random.shuffle(dotOrder)
+        shuffledStimuli = [stimuli[i] for i in dotOrder]
+        centralStimuli = [] #an empty list to avoid too many if else statements
     ts = []
     myWin.flip(); myWin.flip() #Make sure raster at top of screen (unless not in blocking mode), and give CPU a chance to finish other tasks
     t0 = trialClock.getTime()
     for n in range(trialFrames):
-        fixation.draw()
-        oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, shuffledStimuli)
+        if not centralTask:
+            fixation.draw()
+        oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, shuffledStimuli, centralStimuli, centralTask)
         myWin.flip()
         ts.append(trialClock.getTime() - t0)
-    return True, shuffledStimuli, dotOrder, ts
+    return True, shuffledStimuli, dotOrder, ts, replacedText
 
 def getResponse(trialStimuli):
     if autopilot:
@@ -309,7 +326,7 @@ def getResponse(trialStimuli):
         return accuracy, item, expStop, mousePos
 
 
-def drawStimuli(nDots, radius, center, stimulusObject, sameEachTime = True):
+def drawStimuli(nDots, radius, center, stimulusObject, centralTask,  sameEachTime = True):
     if len(center) > 2 or len(center) < 2:
         print('Center coords must be list of length 2')
         return None
@@ -321,7 +338,11 @@ def drawStimuli(nDots, radius, center, stimulusObject, sameEachTime = True):
         return None
     spacing = 360./nDots
     stimuli = []
+    centralLetters = np.random.choice([char for char in ascii_uppercase], nDots, replace = False)
+    centralStimuli = []
     for dot in range(nDots): #have to specify positions for multiples of 90deg because python (computers in general?) can't store exact value of pi and thus cos(pi/2) = 6.123e-17, not 0
+        if centralTask:
+            centralStimuli.append(visual.TextStim(myWin,text = centralLetters[dot],pos=(0,0),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=1,units=units))
         angle = dot*spacing
         if angle == 0:
             xpos = radius
@@ -344,7 +365,10 @@ def drawStimuli(nDots, radius, center, stimulusObject, sameEachTime = True):
             stim = stimulusObject[dot]
         stim.pos = (xpos,ypos)
         stimuli.append(stim)
-    return stimuli
+    if centralTask:
+        return [stimuli, centralStimuli]
+    else:
+        return stimuli
 
 def checkTiming(ts):
     interframeIntervals = np.diff(ts) * 1000
@@ -400,9 +424,10 @@ stimulus = visual.Circle(myWin, radius = stimulusSizeDeg, fillColor = (1,1,1) )
 nDots = 24
 
 sameEachTime = True #same item each position?
+
 if stimulusType=='circle':
     stimulus = visual.Circle(myWin, radius = stimulusSizeDeg, units = units, fillColor = (1,1,1) )
-    stimuli = drawStimuli(nDots, radius, center, stimulus, sameEachTime)
+    stimuli = drawStimuli(nDots, radius, center, stimulus, centralTask, sameEachTime)
     stimForDataFile = 'circle'
 if stimulusType=='letter':
     letter = np.random.choice([i for i in ascii_uppercase], size = 1)[0]
@@ -430,9 +455,9 @@ print('refreshRate =', refreshRate)
 print('cueMS from frames =', cueFrames*(1000./refreshRate))
 print('num of SOAs in the trial:', trialFrames/SOAFrames)
 
-###############
+#######################
 ## Factorial design ###
-###############
+#######################
 numResponsesPerTrial = 1 #default. Used to create headers for dataFile
 stimList = []
 #cuePositions = [dot for dot in range(nDots) if dot not in [0,nDots-1]]
@@ -533,7 +558,8 @@ while trialNum < trials.nTotal and expStop==False:
     cuePos = trial.cuePos
 #    print(cuePos)
     print("Doing trialNum",trialNum)
-    trialDone, trialStimuli, trialStimuliOrder, ts = oneTrial(stimuli)
+    randomInteger = np.random.random_integers(1,9,1)[0]
+    trialDone, trialStimuli, trialStimuliOrder, ts, replacedText = oneTrial(stimuli,centralTask,randomInteger, cuePos)
 
     #Shift positions so that the list starts at 1, which is positioned at (0,radius), and increases clockwise. This is what the MM code expects
     MMPositions = list() #Mixture modelling positions
@@ -545,9 +571,13 @@ while trialNum < trials.nTotal and expStop==False:
     nBlips = checkTiming(ts)
 
     if trialDone:
+        stimuli[1][cuePos].text = replacedText #otherwise you get n digit stimuli on trial n
         accuracy, response, expStop, clickPos = getResponse(trialStimuli)
         responseCoord = response.pos.tolist()
-        spatialCoords= [item.pos.tolist() for item in stimuli]
+        if centralTask:
+            spatialCoords= [item.pos.tolist() for item in stimuli[0]]
+        else:
+            spatialCoords= [item.pos.tolist() for item in stimuli]
         try:
             responseSpatialRelativeToXAxis  = spatialCoords.index(responseCoord)
         except ValueError:
