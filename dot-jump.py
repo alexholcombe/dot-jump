@@ -243,7 +243,7 @@ def oneTrial(stimuli, centralTask,randomInteger, cuePos):
         dotOrder = np.arange(len(stimuli[0]))
         np.random.shuffle(dotOrder)
         shuffledStimuli = [stimuli[0][i] for i in dotOrder]
-        centralStimuli = stimuli[1]
+        centralStimuli = [stimuli[1][i] for i in dotOrder]
         replacedText = centralStimuli[cuePos].text
         centralStimuli[cuePos].text = str(randomInteger)
     else:
@@ -260,7 +260,7 @@ def oneTrial(stimuli, centralTask,randomInteger, cuePos):
         oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, shuffledStimuli, centralStimuli, centralTask)
         myWin.flip()
         ts.append(trialClock.getTime() - t0)
-    return True, shuffledStimuli, dotOrder, ts, replacedText
+    return True, shuffledStimuli, dotOrder, ts, centralStimuli, replacedText
 
 def getResponse(trialStimuli):
     if autopilot:
@@ -488,7 +488,9 @@ oneOffHeaders = [
     'monitorHeight',
     'stimHeight ',
     'ISI',
-    'SOA'
+    'SOA',
+    'centralTask',
+    'centralStream'
 ]
 
 for header in oneOffHeaders:
@@ -559,8 +561,8 @@ while trialNum < trials.nTotal and expStop==False:
 #    print(cuePos)
     print("Doing trialNum",trialNum)
     randomInteger = np.random.random_integers(1,9,1)[0]
-    trialDone, trialStimuli, trialStimuliOrder, ts, replacedText = oneTrial(stimuli,centralTask,randomInteger, cuePos)
-
+    trialDone, trialStimuli, trialStimuliOrder, ts, centralStimuli, replacedText = oneTrial(stimuli,centralTask,randomInteger, cuePos)
+    print([i.text for i in centralStimuli])
     #Shift positions so that the list starts at 1, which is positioned at (0,radius), and increases clockwise. This is what the MM code expects
     MMPositions = list() #Mixture modelling positions
     for dotPos in trialStimuliOrder:
@@ -571,7 +573,6 @@ while trialNum < trials.nTotal and expStop==False:
     nBlips = checkTiming(ts)
 
     if trialDone:
-        stimuli[1][cuePos].text = replacedText #otherwise you get n digit stimuli on trial n
         accuracy, response, expStop, clickPos = getResponse(trialStimuli)
         responseCoord = response.pos.tolist()
         if centralTask:
@@ -604,6 +605,17 @@ while trialNum < trials.nTotal and expStop==False:
         stimulusSizeDeg*2,'\t',
         ISIMS,'\t',
         SOAMS,'\t',
+        centralTask, '\t', 
+        sep='', 
+        end='', 
+        file=dataFile)
+
+        if centralTask:
+            print(''.join([i.text for i in centralStimuli]),'\t', sep='', end='', file=dataFile)
+        else:
+            print('NA','\t', sep='', end='', file=dataFile)
+        
+        print(
         responseSpatial,'\t',
         responseCoord[0],'\t',
         responseCoord[1],'\t',
@@ -614,12 +626,16 @@ while trialNum < trials.nTotal and expStop==False:
         accuracy,'\t',
         responseTemporal,'\t',
         correctTemporal,'\t',
+        sep='',
         end='',
         file = dataFile
         )
         for dot in range(nDots):
-            print(MMPositions[dot], '\t',end='', file=dataFile)
+            print(MMPositions[dot], '\t',sep='',end='', file=dataFile)
         print(nBlips, file=dataFile)
+        print([i.text for i in stimuli[1]])
+        print([i.text for i in centralStimuli])
+        stimuli[1][cuePos].text = replacedText #otherwise you get n digit stimuli on trial n
         trialNum += 1
         dataFile.flush()
 if expStop:
