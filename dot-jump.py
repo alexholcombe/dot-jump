@@ -1,3 +1,4 @@
+
 from __future__ import print_function
 __author__ = """Alex "O." Holcombe, Charles Ludowici, """ ## double-quotes will be silently removed, single quotes will be left, eg, O'Connor
 import time, sys, platform, os
@@ -64,8 +65,8 @@ if True: #just so I can indent all the below
         stimulusType = infoFirst['Stimulus type']
 
         #monitor parameters
-        widthPix = 1280 #1440  #monitor width in pixels
-        heightPix =800  #900 #monitor height in pixels
+        widthPix = 1024 #1440  #monitor width in pixels
+        heightPix =768  #900 #monitor height in pixels
         monitorwidth = 37 #28.5 #monitor width in centimeters
         viewdist = 55.; #cm
         pixelperdegree = widthPix/ (atan(monitorwidth/viewdist) /np.pi*180)
@@ -229,10 +230,10 @@ def oneFrameOfStim(n, itemFrames, SOAFrames, cueFrames, cuePos, shuffledStimuli,
     drawObject = n%SOAFrames < itemFrames
     if drawObject and not centralTask:
         if n >= cueFrame and n < cueMax:
-            obj.draw()
+            periObj.draw()
             cue.draw()
         else:
-            obj.draw()
+            periObj.draw()
     elif drawObject and centralTask:
         periObj.draw(); centralObj.draw()
     return True
@@ -243,13 +244,19 @@ def oneTrial(stimuli, centralTask,randomInteger, cuePos):
         dotOrder = np.arange(len(stimuli[0]))
         np.random.shuffle(dotOrder)
         shuffledStimuli = [stimuli[0][i] for i in dotOrder]
-        centralStimuli = [stimuli[1][i] for i in dotOrder]
+        centralOrder = np.arange(len(stimuli[0]))
+        np.random.shuffle(centralOrder)
+        centralStimuli = [stimuli[1][i] for i in centralOrder]
         replacedText = centralStimuli[cuePos].text
+        #deepcopying the central stimuli throws a series of attribute errors. 
+        #But because what we do here creates a reference to, rather than a copy of, the global object
+        #we end up with numerals in the global stimuli[1] object that need replacing
         centralStimuli[cuePos].text = str(randomInteger)
     else:
         dotOrder = np.arange(len(stimuli))
         np.random.shuffle(dotOrder)
         shuffledStimuli = [stimuli[i] for i in dotOrder]
+        replacedText = None
         centralStimuli = [] #an empty list to avoid too many if else statements
     ts = []
     myWin.flip(); myWin.flip() #Make sure raster at top of screen (unless not in blocking mode), and give CPU a chance to finish other tasks
@@ -342,7 +349,7 @@ def drawStimuli(nDots, radius, center, stimulusObject, centralTask,  sameEachTim
     centralStimuli = []
     for dot in range(nDots): #have to specify positions for multiples of 90deg because python (computers in general?) can't store exact value of pi and thus cos(pi/2) = 6.123e-17, not 0
         if centralTask:
-            centralStimuli.append(visual.TextStim(myWin,text = centralLetters[dot],pos=(0,0),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=1,units=units))
+            centralStimuli.append(visual.TextStim(myWin,text = centralLetters[dot],pos=(0,0),colorSpace='rgb',color=(1,1,1),alignHoriz='center', alignVert='center',height=ltrHeight,units=units))
         angle = dot*spacing
         if angle == 0:
             xpos = radius
@@ -422,6 +429,7 @@ stimulusSizePix = 20.
 stimulusSizeDeg = stimulusSizePix/OGpixelPerDegree
 stimulus = visual.Circle(myWin, radius = stimulusSizeDeg, fillColor = (1,1,1) )
 nDots = 24
+ltrHeight = 2 #deg
 
 sameEachTime = True #same item each position?
 
@@ -562,7 +570,6 @@ while trialNum < trials.nTotal and expStop==False:
     print("Doing trialNum",trialNum)
     randomInteger = np.random.random_integers(1,9,1)[0]
     trialDone, trialStimuli, trialStimuliOrder, ts, centralStimuli, replacedText = oneTrial(stimuli,centralTask,randomInteger, cuePos)
-    print([i.text for i in centralStimuli])
     #Shift positions so that the list starts at 1, which is positioned at (0,radius), and increases clockwise. This is what the MM code expects
     MMPositions = list() #Mixture modelling positions
     for dotPos in trialStimuliOrder:
@@ -633,9 +640,14 @@ while trialNum < trials.nTotal and expStop==False:
         for dot in range(nDots):
             print(MMPositions[dot], '\t',sep='',end='', file=dataFile)
         print(nBlips, file=dataFile)
-        print([i.text for i in stimuli[1]])
-        print([i.text for i in centralStimuli])
-        stimuli[1][cuePos].text = replacedText #otherwise you get n digit stimuli on trial n
+        if centralTask:
+            print('centralStimuli global')
+            print([i.text for i in centralStimuli])
+            print('stimuli[1] global')
+            print([i.text for i in stimuli[1]])
+            globalReplaced = [position for position,item in enumerate(stimuli[1]) if item.text.isdigit()][0] #which of the items in the global stimuli object has been replaced by a digit?
+            print(globalReplaced)
+            stimuli[1][globalReplaced].text = replacedText #otherwise you get n digit stimuli on trial n
         trialNum += 1
         dataFile.flush()
 if expStop:
