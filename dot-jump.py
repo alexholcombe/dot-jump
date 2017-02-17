@@ -444,8 +444,8 @@ if stimulusType=='letter':
     stimForDataFile = letter
 
 ###Trial timing parameters
-SOAMS = 66.667
-itemMS = 22.222
+SOAMS = 94.12
+itemMS = 23.52
 ISIMS = SOAMS - itemMS
 trialMS = SOAMS * nDots
 cueMS = itemMS
