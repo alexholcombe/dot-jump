@@ -3,13 +3,15 @@ library(reshape2)
 
 rm(list=ls())
 
-setwd('~/gitCode/dot-jump/data/')
+setwd('~/gitCode/dot-jump/dataRaw/Endogenous Cue/')
 dataFiles <- list.files(pattern='.txt')
 
-nLines <- 0
-for(rawFile in dataFiles){
-  if(!(readLines(rawFile)-1)<250) nLines <- nLines+readLines(rawFile)-1
-}
+nLines <- length(dataFiles)*250
+# for(rawFile in dataFiles){
+#   print(rawFile)
+#   print(length(readLines(rawFile))-1)
+#   nLines <- nLines+(length(readLines(rawFile))-250)-1
+# }
 
 types <- lapply(read.table(dataFiles[1], sep='\t', header=T, stringsAsFactors = F), class)
 fullData <- data.frame(matrix(NA, nrow=nLines, ncol=length(types)))
@@ -75,5 +77,5 @@ for(col in 2:ncol(expectedFormat)){
 for(ID in unique(expectedFormat$subject)){
   temp <- expectedFormat[expectedFormat$subject==ID,-1]
   ID <- gsub(' ','',ID) #Why does python include so many extra spaces in character columns?
-  write.table(temp, paste0('variableCue',ID,'.txt'), sep='\t', row.names = F, col.names = F)
+  write.table(temp, paste0('../../data/wrangled/endogenousCue/',ID,'.txt'), sep='\t', row.names = F, col.names = F)
 }
