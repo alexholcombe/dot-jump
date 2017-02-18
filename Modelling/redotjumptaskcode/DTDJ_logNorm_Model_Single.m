@@ -38,12 +38,13 @@ addpath(genpath('~/gitCode/dot-jump/Modelling/redotjumptaskcode/'))
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'endogenousCue'};
+sampleNames = {'endogenousCue', 'variableCue'};
 
 % Provide some properties of the data for each sample, in order
-allNParticipants = [5];         % Number of participants
+allNParticipants = [2,5];         % Number of participants
 allNPositions = [24];            % Number of items in a stream on each trial
 allNConditions = [1];             % Number of conditions
+nFreeParameters = 5;
 
 % Set some model-fitting parameters.
 nReplicates = 200;                          % Number of times to repeat each fit with different starting values
@@ -56,15 +57,16 @@ fitMaxFunEvals = 10^5;                      % Maximum number of model evaluation
 % enough to prevent over-fitting to blips in the distributions. These
 % values are about right in most cases, but might need some tweaking if
 % e.g. you were analysing data with an unusually high or low item rate.
-muBound_t = 4;      % Time
-sigmaBound_t = 4;
+muBound_t = exp(4);      % Time
+sigmaBound_t = exp(4);
 muBound_x = pi/2;      % Space (radians)
 kappaBounds_x = [1 500]; % The upper bound is just to stop NaNs;
 
 % Ordinarily you wouldn't want to change these, but you might want to 
 % provide a different function with a different number of parameters.
 nFreeParameters = 5;
-pdf_normmixture_single = @DTDJ_norm_pdf_Mixture_Single;
+pdf_normmixture_single = @DTDJ_logNorm_pdf_Mixture_Single;
+test_pdf = @DTDJ_logNorm_pdf_Mixture_Single_global; %for debugging 
 
 % Just for diagnostics. Setting this to 1 will show the fitted
 % distributions for every participant in every condition, so it's not practical
@@ -92,7 +94,6 @@ warning('off', 'stats:mlecov:NonPosDefHessian');
 
 % Determine number of samples
 nSamples = numel(sampleNames);
-
 
 allMinNegLogLikelihoods_byParticipant = NaN(nSamples,max(allNParticipants));
 allNTrials_byParticipant = NaN(nSamples,max(allNParticipants));
@@ -158,13 +159,13 @@ for thisSample = 1:nSamples
         % unpacked for each scenario.
 
         % Unpack mean (latency) bounds.
-        mu_lb_t = -muBound_t;
+        mu_lb_t = 1e-4;
         mu_ub_t = muBound_t;
         mu_lb_x = -muBound_x;
         mu_ub_x = muBound_x;
 
         % Unpack SD (precision) bounds.
-        sigma_lb_t = .1 % log(sigma) has to be greater than 0
+        sigma_lb_t = (1+1e-4) % log(sigma) has to be greater than 0
         sigma_ub_t = sigmaBound_t;
         kappa_lb_x = kappaBounds_x(1);
         kappa_ub_x = kappaBounds_x(2);
@@ -182,13 +183,19 @@ for thisSample = 1:nSamples
         % the range dictated by the bounds.
 
         for thisReplicate = 1:nReplicates
-            fprintf('\n This replicate = %d', thisReplicate);
+            %fprintf('\n This replicate = %d', thisReplicate);
             % Randomise starting values for each parameter.
             pGuess = max([smallNonZeroNumber rand]);
             muGuess_x = (2*muBound_x*rand)-muBound_x;
             kappaGuess_x = rand*(kappaBounds_x(2)-kappaBounds_x(1))+kappaBounds_x(1);
-            muGuess_t = (2*muBound_t*rand)-muBound_t;
-            sigmaGuess_t = sigmaBound_t*rand+smallNonZeroNumber;
+            muGuess_t = rand;
+            while muGuess_t < mu_lb_t
+                muGuess_t = rand;
+            end
+            sigmaGuess_t = rand*2;
+            while sigmaGuess_t < sigma_lb_t
+                sigmaGuess_t = rand*2;
+            end
 
             % Compile to feed into the MLE function.
             parameterGuess = [pGuess muGuess_x kappaGuess_x muGuess_t sigmaGuess_t];
@@ -202,7 +209,7 @@ for thisSample = 1:nSamples
             
             % Run the MLE function. We're feeding it a dummy list of trials
             % so that it is happy, but we're actually using the global
-            % variable to pass the relevant data.
+            % variable to pass the relevant data.f
             [currentEstimates, currentCIs] = mle(trialList, 'pdf', pdf_normmixture_single, 'start', parameterGuess, 'lower', parameterLowerBound, 'upper', parameterUpperBound, 'options', options);
 
             % Compute the negative log likelihood of the fitted model.
@@ -227,7 +234,6 @@ for thisSample = 1:nSamples
         allT1MinNegLogLikelihoods(thisParticipant) = minNegLogLikelihood;
         allMinNegLogLikelihoods_byParticipant(thisSample, thisParticipant) = minNegLogLikelihood;
         allNTrials_byParticipant(thisSample, thisParticipant) = allNTrials(thisParticipant);
-
 
         % Now, compare this against a uniform distribution alone.
         thisNegLogLikelihood_NullModel = -sum(log(pdf_normmixture_single(trialList,0,0,10,0,1)));
@@ -300,11 +306,10 @@ for thisSample = 1:nSamples
     %cd([thisPath 'ModelOutput']);
     
     % Save model output.
-    save(['ModelOutput_DTDJ_' sampleNames{thisSample} '_Single.mat'], '-regexp', '^(?!(pFig)$).');
+    save(['logNormalModelOutput_DTDJ_' sampleNames{thisSample} '_Single.mat'], '-regexp', '^(?!(pFig)$).');
 
 end
 
-save('normalModelLikelihood', 'allMinNegLogLikelihoods_byParticipant', 'allNTrials_byParticipant');
-
+save('logNormalModelLikelihood', 'allMinNegLogLikelihoods_byParticipant', 'allNTrials_byParticipant');
 % Turn this warning back on.
 warning('on', 'stats:mlecov:NonPosDefHessian');

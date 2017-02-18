@@ -38,10 +38,10 @@ addpath(genpath('~/gitCode/dot-jump/Modelling/redotjumptaskcode/'))
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'endogenousCue'};
+sampleNames = {'endogenousCue', 'variableCue'};
 
 % Provide some properties of the data for each sample, in order
-allNParticipants = [5];         % Number of participants
+allNParticipants = [2 5];         % Number of participants
 allNPositions = [24];            % Number of items in a stream on each trial
 allNConditions = [1];             % Number of conditions
 
@@ -182,7 +182,7 @@ for thisSample = 1:nSamples
         % the range dictated by the bounds.
 
         for thisReplicate = 1:nReplicates
-            fprintf('\n This replicate = %d', thisReplicate);
+            %fprintf('\n This replicate = %d', thisReplicate);
             % Randomise starting values for each parameter.
             pGuess = max([smallNonZeroNumber rand]);
             muGuess_x = (2*muBound_x*rand)-muBound_x;
@@ -300,7 +300,7 @@ for thisSample = 1:nSamples
     %cd([thisPath 'ModelOutput']);
     
     % Save model output.
-    save(['ModelOutput_DTDJ_' sampleNames{thisSample} '_Single.mat'], '-regexp', '^(?!(pFig)$).');
+    save(['normalModelOutput_DTDJ_' sampleNames{thisSample} '_Single.mat'], '-regexp', '^(?!(pFig)$).');
 
 end
 

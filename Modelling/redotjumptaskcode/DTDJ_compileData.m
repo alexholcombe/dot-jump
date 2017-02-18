@@ -3,7 +3,9 @@
 
 clear all; %#ok<CLSCR>
 
-allGroups = {'variableCue'};
+plots = 0;
+
+allGroups = {'variableCue', 'endogenousCue'};
 dataDirectory = '~/gitCode/dot-jump/data/wrangled/';
 saveDirectory = '~/gitCode/dot-jump/data/modelOutput/';
 
@@ -170,11 +172,12 @@ for thisGroup = 1:nGroups
             startTrial = endTrial + 1;
 
         end
-
-        figure;
-        imagesc(squeeze(allT1ErrorMatrix(thisParticipant,:,:)));
-        axis square;
-        colormap(gray);
+        if plots
+            figure;
+            imagesc(squeeze(allT1ErrorMatrix(thisParticipant,:,:)));
+            axis square;
+            colormap(gray);
+        end
 
         % If this is the highest number of trials per participant so far,
         % store that number.
