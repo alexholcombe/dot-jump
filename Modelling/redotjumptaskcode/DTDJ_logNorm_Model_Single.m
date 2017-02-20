@@ -47,7 +47,7 @@ allNConditions = [1];             % Number of conditions
 nFreeParameters = 5;
 
 % Set some model-fitting parameters.
-nReplicates = 200;                          % Number of times to repeat each fit with different starting values
+nReplicates = 1;                          % Number of times to repeat each fit with different starting values
 smallNonZeroNumber = 10^-5;                 % Useful number for when limits can't be exactly zero but can be anything larger
 fitMaxIter = 10^5;                          % Maximum number of fit iterations
 fitMaxFunEvals = 10^5;                      % Maximum number of model evaluations

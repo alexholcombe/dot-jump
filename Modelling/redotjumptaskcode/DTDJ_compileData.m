@@ -5,7 +5,7 @@ clear all; %#ok<CLSCR>
 
 plots = 0;
 
-allGroups = {'variableCue', 'endogenousCue'};
+allGroups = {'simulatedData'}%{'variableCue', 'endogenousCue'};
 dataDirectory = '~/gitCode/dot-jump/data/wrangled/';
 saveDirectory = '~/gitCode/dot-jump/data/modelOutput/';
 
@@ -17,7 +17,7 @@ nPositions = 24;
 possTimeErrors = -18:15; % Possible time errors
 possPositionErrors = -11:12; % Possible position errors
 
-IDLength = 13 %number of characters in filenames that correspond to unique ID
+IDLength = 3 %number of characters in filenames that correspond to unique ID
 
 for thisPosition = 1:nPositions
     dataFormats = strcat(dataFormats, '%d');
@@ -42,7 +42,7 @@ dataColumns = [3 1 4 2; ...
 % zeros. So make sure this is definitely higher than the actual maximum
 % number of trials.
 
-nTrialsMaxEstimate = 200;
+nTrialsMaxEstimate = 250;
 
 % Calculate the number of groups.
 nGroups = numel(allGroups);
@@ -138,18 +138,18 @@ for thisGroup = 1:nGroups
             % Array is circular, so we need to work out the minimum
             % absolute error.
             [minError,minPos] = min(mod([double(thisRead{dataColumns(thisGroup,4)})-double(thisRead{dataColumns(thisGroup,2)}),double(thisRead{dataColumns(thisGroup,2)})-double(thisRead{dataColumns(thisGroup,4)})],nPositions),[],2);
-            thisError = (3-(2*minPos)) .* minError; % Adds the appropriate sign
+            thisError = (3-(2*minPos)) .* minError; % Adds the appropriate sign. 
 
             allT1ErrorPosition(thisParticipant,1,startTrial:endTrial) = thisError;
 
             % Add these trials to the error matrix. Add one count to every
             % possible combination of spatial/temporal errors on that
             % trial.
-            allSequence = double([thisRead{5:28}]); % Sequence of positions on every trial
-            allTimeError =  repmat(1:24,nTrials,1) - repmat(double(thisRead{dataColumns(thisGroup,1)}),1,nPositions);
+            allSequence = double([thisRead{5:28}]); % Sequence of dot positions on every trial
+            allTimeError =  repmat(1:24,nTrials,1) - repmat(double(thisRead{dataColumns(thisGroup,1)}),1,nPositions); %Array of the serial position difference between each item and the target on each trial 
             allPositionErrorA = mod(allSequence - repmat(double(thisRead{dataColumns(thisGroup,4)}),1,nPositions),nPositions);
             allPositionErrorB = mod(repmat(double(thisRead{dataColumns(thisGroup,4)}),1,nPositions) - allSequence, nPositions);
-            [minError,minPos] = min(cat(3,allPositionErrorA,allPositionErrorB),[],3);
+            [minError,minPos] = min(cat(3,allPositionErrorA,allPositionErrorB),[],3); %Minimum error between the response and all positions on a trial. I.e. if the first item of a trial was -19 or 5 from the cue, select 5. Do this for every item in the stream. 
             allPositionError = (3-(2*minPos)) .* minError; % Adds the appropriate sign
 
             allT1ErrorCombinations(thisParticipant,startTrial:endTrial,:,:) = cat(3,allTimeError, allPositionError);

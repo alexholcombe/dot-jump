@@ -38,25 +38,25 @@ addpath(genpath('~/gitCode/dot-jump/Modelling/redotjumptaskcode/'))
 
 % Provide a name for each sample,
 % so files can be read and written with corresponding filenames.
-sampleNames = {'endogenousCue', 'variableCue'};
+sampleNames = {'endogenousCue'};
 
 % Provide some properties of the data for each sample, in order
-allNParticipants = [2 5];         % Number of participants
+allNParticipants = [5];         % Number of participants
 allNPositions = [24];            % Number of items in a stream on each trial
 allNConditions = [1];             % Number of conditions
 
 % Set some model-fitting parameters.
 nReplicates = 200;                          % Number of times to repeat each fit with different starting values
 smallNonZeroNumber = 10^-5;                 % Useful number for when limits can't be exactly zero but can be anything larger
-fitMaxIter = 10^5;                          % Maximum number of fit iterations
-fitMaxFunEvals = 10^5;                      % Maximum number of model evaluations
+fitMaxIter = 10^4;                          % Maximum number of fit iterations
+fitMaxFunEvals = 10^4;                      % Maximum number of model evaluations
 
 % Set some parameter bounds. You want these large enough that they span the
 % full reasonable range of mean (latency) and SD (precision), but small
 % enough to prevent over-fitting to blips in the distributions. These
 % values are about right in most cases, but might need some tweaking if
 % e.g. you were analysing data with an unusually high or low item rate.
-muBound_t = 4;      % Time
+muBound_t = 9;      % Time
 sigmaBound_t = 4;
 muBound_x = pi/2;      % Space (radians)
 kappaBounds_x = [1 500]; % The upper bound is just to stop NaNs;
@@ -164,7 +164,7 @@ for thisSample = 1:nSamples
         mu_ub_x = muBound_x;
 
         % Unpack SD (precision) bounds.
-        sigma_lb_t = .1 % log(sigma) has to be greater than 0
+        sigma_lb_t = .1; % log(sigma) has to be greater than 0
         sigma_ub_t = sigmaBound_t;
         kappa_lb_x = kappaBounds_x(1);
         kappa_ub_x = kappaBounds_x(2);
@@ -193,7 +193,7 @@ for thisSample = 1:nSamples
             % Compile to feed into the MLE function.
             parameterGuess = [pGuess muGuess_x kappaGuess_x muGuess_t sigmaGuess_t];
             parameterLowerBound = [smallNonZeroNumber mu_lb_x kappa_lb_x mu_lb_t sigma_lb_t];
-            parameterUpperBound = [1 mu_ub_x kappa_ub_x mu_ub_t sigma_ub_t];
+            parameterUpperBound = [.9999 mu_ub_x kappa_ub_x mu_ub_t sigma_ub_t];
 
             % Ensure guesses satisfy bounds, and round them marginally
             % up or down if necessary.
@@ -210,7 +210,8 @@ for thisSample = 1:nSamples
 
             % Check whether this is lower than the lowest so far.
             if minNegLogLikelihood > thisNegLogLikelihood
-
+                currentEstimates
+                thisNegLogLikelihood
                 % If so, store this as the current best estimate.
                 minNegLogLikelihood = thisNegLogLikelihood;
                 bestEstimates = currentEstimates;
